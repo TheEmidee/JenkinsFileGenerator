@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "name": "Python Debugger: Module",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "generator",
+      "args": [
+        "${workspaceFolder}/Samples/jenkinsfile_config_pr.yaml",
+        "--output",
+        "${workspaceFolder}/Samples/Jenkinsfile"
+      ]
+    }
+  ]
+}

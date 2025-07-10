@@ -1,0 +1,123 @@
+// THIS FILE HAS BEEN AUTO-GENERATED USING PYSCRIPTS
+// Version : 1.0.0
+
+@Library('slack-notifier@master')
+@Library('jenkins-utils@master')
+@Library('github@master')
+
+import org.emidee.jenkins.DeploymentEnvironment
+import org.emidee.jenkins.Environment
+import groovy.transform.Field
+
+properties([
+buildDiscarder( logRotator( numToKeepStr: '10' ) ),
+pipelineTriggers( [ cron( 'H 3 * * 1-6' ) ] ),
+])
+
+initializeEnvironment( this, "test" )
+
+def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
+if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
+    pull_request_infos = getGitHubPRInfos()
+
+    updateJobDescriptionFromPR( pull_request_infos )
+
+    ( can_process_build, message, build_result ) = canProcessBuild( pull_request_infos )
+
+    if ( !can_process_build ) {
+        log.info message
+        currentBuild.result = build_result
+        return
+    }
+}
+
+try {
+    sendMessageToSlack( channel: "#ci-cd", color: "#0000FF", message: "Build Started" )
+def properties = "-set:Skip_Test_EditorBoot=True -set:Skip_Test_TargetBoot=True -set:Skip_Validation_CompileAllBlueprints=True -set:Skip_Validation_StaticAnalysis=True "
+
+
+jobs = [:]
+jobs[ "Compile MyGameEditor Win64" ] = {
+    runBuildGraph( 
+        "Compile MyGameEditor Win64", 
+        [ 
+            "MyGame Compile Editor Win64" 
+        ],
+        "Win64",
+        properties 
+        )
+    }
+
+jobs.failFast = true
+parallel jobs
+
+    if ( currentBuild.result == 'UNSTABLE' ) {
+        sendMessageToSlack( channel: "#fubar", color: "warning", message: "Hello world" )
+    } else if ( currentBuild.result == 'FAILURE' ) {
+        
+    } else {
+        sendMessageToSlack( channel: "#ci-cd", color: "good", message: "Build Success" )
+        
+        
+        sendBlocksToSlack( channel: "#so[pihjgosdfhj]", color: "good", blocks: [] )
+    }
+
+    
+} catch ( Exception err ) {
+    sendMessageToSlack( channel: "#ci-cd", color: "danger", message: "Build Failed (Reason: ${err})" )
+    error "Failed to process : " + err.toString()
+} finally {
+    cleanup()
+}
+
+def sendMessageToSlack( String message, String color, String channel = "#ci-cd" ) {
+    slackSend( channel: channel, color: color, message: message )
+}
+
+def sendBlocksToSlack( blocks, String color, String channel = "#ci-cd" ) {
+    slackSend( channel: channel, color: color, blocks: blocks )
+}
+def canProcessPullRequest( pull_request_infos ) {
+    Boolean can_process_build = true
+    String pr_title = ""
+    String message = ""
+    String build_result = ""
+
+    if ( pull_request_infos != null ) {
+        pr_title = pull_request_infos.title
+    }
+
+    def tokens = ['WIP', 'NO_CI']
+    def foundToken = tokens.find { token -> pr_title.toLowerCase().contains(token.toLowerCase()) }
+
+    if ( foundToken ) {
+        can_process_build = false
+        message = "This pull request is ignored because the token ${foundToken} was found in the title."
+        build_result = 'NOT_BUILT'
+    }
+
+    return [ can_process_build, message, build_result ]
+}
+
+def updateJobDescriptionFromPR() {
+    if ( pull_request_infos == null ) {
+        return
+    }
+
+    def pr_body = pull_request_infos.body
+    currentBuild.description = pr_body
+}
+
+def getGitHubPRInfos() {
+    def pull_request_infos = null
+
+    def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
+
+    if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
+        withCredentials( [ string( credentialsId: 'Emidee_Access_Token', variable: 'GITHUB_ACCESS_TOKEN' ) ] ) {
+            pull_request_infos = getGitHubCurrentPullRequestInfos( this, GITHUB_ACCESS_TOKEN, "FishingCactus", Environment.instance.PROJECT_NAME )
+        }
+    }
+
+    return pull_request_infos
+}

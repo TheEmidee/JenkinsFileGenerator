@@ -1,0 +1,68 @@
+name: "test"
+features:
+  properties:
+    items:
+      - "buildDiscarder( logRotator( numToKeepStr: '10' ) )"
+      - "pipelineTriggers( [ cron( 'H 3 * * 1-6' ) ] )"
+  github:
+    credentials_id: "Emidee_Access_Token"
+    pull_requests:
+      filter:
+        tokens:
+          - "WIP"
+          - "NO_CI"
+        message: "This pull request is ignored because the token ${foundToken} was found in the title."
+      update_description_from_pr_body: true
+  slack_notifications:
+    channel: "#ci-cd"
+    message_template: " : ${env.JOB_NAME} - ${env.CHANGE_BRANCH} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+    on_success:
+      blocks_message:
+        enabled: true
+        channel_override: "#so[pihjgosdfhj]"
+        # blocks: "slack_failure_blocks" //:TODO: Update the feature to load a JSON file
+    on_failure:
+      simple_message:
+        enabled: false
+    on_unstable:
+      simple_message:
+        channel_override: "#fubar"
+        message: "Hello world"
+  git:
+    use_simple_checkout: false
+    branch_name: "refs/heads/develop"
+    extensions:
+      CheckoutOption:
+        timeout: 120
+      SubmoduleOption:
+        disableSubmodules: false
+        parentCredentials: true
+        recursiveSubmodules: true
+        reference: ""
+        timeout: 120
+        trackingSubmodules: false
+      GitLFSPull:
+        enabled: true
+    user_remote_config:
+      credentials_id:
+        id: "CredentialId"
+        url: "git@github.com:Github/Octocat.git"
+  unreal:
+    default_node_names: "UE_5.5"
+    buildgraph:
+      target: "BuildAndTest XXX"
+      properties:
+        Clean: "False"
+        Skip_Test_EditorBoot: "True"
+        Skip_Test_TargetBoot: "True"
+        Skip_Validation_CompileAllBlueprints: "True"
+        With_Publish: "True"
+        Package_Publish_WithZip: "True"
+        Package_Publish_Clean: "True"
+        Publish_Directory: "\\\\nas\\Versions\\MyProject\\Nightly\\WIP"
+        Cook_DDCNoShared: "True"
+        CI_BuildId: "`${env.BUILD_NUMBER}"
+        TargetConfigurations: "Development+Shipping"
+    cleanup_after_build:
+      enabled: true
+      additional_node_name: "Win64"
