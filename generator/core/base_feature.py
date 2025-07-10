@@ -64,13 +64,8 @@ class BaseFeature(ABC):
 
         for block_type, block_value in blocks.blocks.items():
             try:
-                rendered = template.get_def(block_type).render_unicode(**context.__dict__)
-                if rendered.strip():
-                    cleaned = rendered.strip() # re.sub(r'\n\s*\n', '\n', rendered.strip())
-                    if context.global_values.get('output_feature_sections', True ):
-                        cleaned = f"// === Feature: {self.feature_name} ===\n{cleaned}\n// === End feature: {self.feature_name} ==="
-
-                    block_value.append(cleaned)
+                block = self.render_block(block_type, context, template)
+                block_value.append(block)
             except AttributeError as e:
                 # Block not defined in template - that's OK
                 pass
@@ -78,3 +73,15 @@ class BaseFeature(ABC):
                 print(f"Warning: Error rendering {block_type} for {self.feature_name}: {e}")
         
         return blocks
+    
+    def render_block(self, block_type: str, context: TemplateContext, template) -> str:
+        """Render a single block for this feature."""
+        rendered = template.get_def(block_type).render_unicode(**context.__dict__)
+        if rendered.strip():
+            cleaned = rendered.strip() # re.sub(r'\n\s*\n', '\n', rendered.strip())
+            if context.global_values.get('output_feature_sections', True ):
+                cleaned = f"// === Feature: {self.feature_name} ===\n{cleaned}\n// === End feature: {self.feature_name} ==="
+
+            return cleaned
+
+        return ""
