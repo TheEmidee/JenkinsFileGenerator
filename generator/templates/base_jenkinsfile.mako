@@ -15,7 +15,7 @@ ${properties}
 ${pre_pipeline_steps}
 
 try {
-    ${pre_build_steps}
+    ${build_steps}
 
     if ( currentBuild.result == 'UNSTABLE' ) {
         ${on_build_unstable}

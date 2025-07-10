@@ -8,7 +8,7 @@ import yaml
 from .. import logger
 from .template_context import TemplateContext
 from .pipeline_config import PipelineConfig
-from .generated_blocks import GeneratedBlocks, make_generated_blocks
+from .generated_blocks import GeneratedBlocks
 from .base_feature import BaseFeature
 from .dependency_resolver import DependencyResolver
 from .feature_registry import FeatureRegistry
@@ -27,7 +27,6 @@ class JenkinsfileGenerator:
     def generate_jenkinsfile(self, config_path: str, output_path: str) -> None:
         """Main method to generate a Jenkinsfile from configuration."""
 
-        # Load configuration
         config = self.load_config(config_path)
         selected_features = self.select_features(config)
         logger.info(f"Selected {len(selected_features)} features: {[f.feature_name for f in selected_features]}")
@@ -35,7 +34,7 @@ class JenkinsfileGenerator:
         ordered_features = DependencyResolver.resolve_dependencies(selected_features)
         logger.info(f"Feature order (after dependency resolution): {[f.feature_name for f in ordered_features]}")
 
-        all_blocks = make_generated_blocks()
+        all_blocks = GeneratedBlocks()
         global_values = {
             'pipeline_name': config.name,
             'generator_version': '1.0.0',
@@ -54,7 +53,6 @@ class JenkinsfileGenerator:
 
                 blocks = feature.render_blocks(context, self.template_lookup)
 
-                # Merge blocks
                 all_blocks.merge_with(blocks)
 
             except Exception as e:
@@ -75,7 +73,7 @@ class JenkinsfileGenerator:
         """Select and instantiate features based on configuration."""
         selected_features : List[BaseFeature] = []
         
-        for feature_name, feature_class in FeatureRegistry().get_all_features().items():
+        for _, feature_class in FeatureRegistry().get_all_features().items():
             feature_instance = feature_class()
             if feature_instance.should_include(config.features):
                 selected_features.append(feature_instance)
@@ -102,6 +100,5 @@ class JenkinsfileGenerator:
         except Exception as e:
             raise RuntimeError(f"Failed to render base template: {e}")
         
-        # Write to output file
         with open(output_path, 'wb') as f:
             f.write(rendered)

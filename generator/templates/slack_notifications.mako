@@ -24,7 +24,7 @@
 @Library('slack-notifier@master')
 </%def>
 
-<%def name="pre_build_steps()">
+<%def name="build_steps()">
 ${try_send_message(event=feature_config.pre_build_step)}
 </%def>
 

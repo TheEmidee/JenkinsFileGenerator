@@ -4,7 +4,7 @@ from pydantic import BaseModel, PrivateAttr, ValidationError
 from mako.lookup import TemplateLookup
 
 from .pipeline_config import PipelineConfig
-from .generated_blocks import GeneratedBlocks, make_generated_blocks
+from .generated_blocks import GeneratedBlocks
 from .template_context import TemplateContext
 from .feature_registry import FeatureRegistry
 
@@ -60,7 +60,7 @@ class BaseFeature(ABC):
         except Exception as e:
             raise FileNotFoundError(f"Template not found for feature '{self.feature_name}': {self.template_path}")
         
-        blocks = make_generated_blocks()
+        blocks = GeneratedBlocks()
 
         for block_type, block_value in blocks.blocks.items():
             try:

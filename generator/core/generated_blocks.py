@@ -6,6 +6,24 @@ class GeneratedBlocks:
     """Container for all generated code blocks."""
     blocks: Dict[str,List[str]] = field(default_factory=dict)
 
+    def __post_init__(self):
+        required_keys = [
+            "libraries",
+            "imports",
+            "properties",
+            "pre_pipeline_steps",
+            "build_steps",
+            "on_build_unstable",
+            "on_build_failure",
+            "on_build_success",
+            "post_build_steps",
+            "on_exception_thrown",
+            "on_finally",
+            "additional_functions",
+        ]
+        for key in required_keys:
+            self.blocks.setdefault(key, [])
+
     def merge_with(self, other: 'GeneratedBlocks'):
         """Merge this instance with another GeneratedBlocks instance."""
         for key, value in other.blocks.items():
@@ -13,19 +31,3 @@ class GeneratedBlocks:
                 self.blocks[key].extend(value)
             else:
                 self.blocks[key] = list(value)
-
-def make_generated_blocks() -> GeneratedBlocks:
-    blocks = GeneratedBlocks()
-    blocks.blocks["libraries"] = []
-    blocks.blocks["imports"] = []
-    blocks.blocks["properties"] = []
-    blocks.blocks["pre_pipeline_steps"] = []
-    blocks.blocks["pre_build_steps"] = []
-    blocks.blocks["on_build_unstable"] = []
-    blocks.blocks["on_build_failure"] = []
-    blocks.blocks["on_build_success"] = []
-    blocks.blocks["post_build_steps"] = []
-    blocks.blocks["on_exception_thrown"] = []
-    blocks.blocks["on_finally"] = []
-    blocks.blocks["additional_functions"] = []
-    return blocks
