@@ -33,23 +33,93 @@ if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
 
 try {
     sendMessageToSlack( channel: "#ci-cd", color: "#0000FF", message: "Build Started" )
-def properties = "-set:Skip_Test_EditorBoot=True -set:Skip_Test_TargetBoot=True -set:Skip_Validation_CompileAllBlueprints=True -set:Skip_Validation_StaticAnalysis=True "
+def properties = "-set:key1=value1 -set:key2=value2 "
 
+        jobs = [:]
 
-jobs = [:]
-jobs[ "Compile MyGameEditor Win64" ] = {
-    runBuildGraph( 
-        "Compile MyGameEditor Win64", 
-        [ 
-            "MyGame Compile Editor Win64" 
-        ],
-        "Win64",
-        properties 
-        )
-    }
+            jobs[ "Compile SummerCampEditor Win64" ] = {
+                runBuildGraph( 
+                    "Compile SummerCampEditor Win64", 
+                    [ 
+                            "SummerCamp Compile Editor Win64",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
 
-jobs.failFast = true
-parallel jobs
+        jobs.failFast = true
+        parallel jobs
+        jobs = [:]
+
+            jobs[ "Naming Convention Validation Win64" ] = {
+                runBuildGraph( 
+                    "Naming Convention Validation Win64", 
+                    [ 
+                            "Naming Convention Validation Win64",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
+            jobs[ "Data Validation Win64" ] = {
+                runBuildGraph( 
+                    "Data Validation Win64", 
+                    [ 
+                            "Data Validation Win64",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
+            jobs[ "Map Check Win64" ] = {
+                runBuildGraph( 
+                    "Map Check Win64", 
+                    [ 
+                            "Map Check Win64",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
+            jobs[ "Check No Redirectors Win64" ] = {
+                runBuildGraph( 
+                    "Check No Redirectors Win64", 
+                    [ 
+                            "Check No Redirectors Win64",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
+
+        jobs.failFast = true
+        parallel jobs
+        jobs = [:]
+
+            jobs[ "Package SummerCamp Win64 Development" ] = {
+                runBuildGraph( 
+                    "Package SummerCamp Win64 Development", 
+                    [ 
+                            "SummerCamp Cook Win64 Development",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
+            jobs[ "Package SummerCamp Switch Development" ] = {
+                runBuildGraph( 
+                    "Package SummerCamp Switch Development", 
+                    [ 
+                            "SummerCamp Cook Switch Development",
+                    ],
+                    "Win64",
+                    properties 
+                    )
+            }
+
+        jobs.failFast = true
+        parallel jobs
 
     if ( currentBuild.result == 'UNSTABLE' ) {
         sendMessageToSlack( channel: "#fubar", color: "warning", message: "Hello world" )
@@ -76,6 +146,22 @@ def sendMessageToSlack( String message, String color, String channel = "#ci-cd" 
 
 def sendBlocksToSlack( blocks, String color, String channel = "#ci-cd" ) {
     slackSend( channel: channel, color: color, blocks: blocks )
+}
+def cleanup( Boolean delete_versions_folder = false ) {
+    node( "UE_5.5 && Win64" ) {
+        initializeEnvironment( this, "MyGame" )
+
+        skipDefaultCheckout()
+
+        ws( getWorkspace( this, "UE_5.5" ) ) {
+            stage ( "Cleanup" ) {
+                
+                def str_value = String.valueOf( delete_versions_folder )
+                
+                // \044 is the octal representation of $
+            }
+        }
+    }
 }
 def canProcessPullRequest( pull_request_infos ) {
     Boolean can_process_build = true

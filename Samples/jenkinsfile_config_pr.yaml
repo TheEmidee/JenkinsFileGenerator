@@ -48,6 +48,8 @@ features:
         id: "CredentialId"
         url: "git@github.com:Github/Octocat.git"
   unreal:
+    project:
+      uproject_path: "E:/Dev/Projects/Summercamp_pyscripts/SummerCamp.uproject"
     default_node_names: "UE_5.5"
     buildgraph:
       target: "BuildAndTest XXX"
