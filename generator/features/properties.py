@@ -1,9 +1,9 @@
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, validator
+from typing import Any, Dict, List
+from pydantic import BaseModel
 
-from ..core.base_feature import BaseFeature
+from ..core.base_feature import BaseFeature, FeatureConfig
 
-class PropertiesConfig(BaseModel):
+class PropertiesConfig(FeatureConfig):
     """Configuration model for the pipeline properties."""
     items: List[str] = None
 

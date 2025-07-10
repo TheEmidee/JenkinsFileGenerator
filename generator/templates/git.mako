@@ -1,5 +1,3 @@
-<%namespace name="utils" module="uepyscripts.tools.mako.utils"/>
-
 <%def name="additional_functions()">
 def gitCheckout() {
 % if feature_config.use_simple_checkout:
