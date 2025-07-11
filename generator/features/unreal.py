@@ -1,17 +1,16 @@
-import importlib
-from io import StringIO
-import os
-import runpy
-import sys
+import json
 from typing import Any, Dict, Optional
-from pydantic import BaseModel, ValidationInfo, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pathlib import Path
 
+from .. import logger
 from ..core.base_feature import BaseFeature, FeatureConfig
 from ..core.template_context import TemplateContext
-from .. import logger
+from ..utils import call_external_module
 
-GENERATE_JENKINS_JOBS_MODULE = "generate_jenkins_jobs.py"
+class UnrealBuildGraphConfig(BaseModel):
+    target: str
+    properties: Dict[str,str]
 
 class UnrealCleanupConfig(BaseModel):
     enabled: Optional[bool] = None
@@ -65,6 +64,7 @@ class UnrealConfig(FeatureConfig):
     """Configuration model for the unreal feature."""
 
     project: UnrealProjectConfig
+    buildgraph: UnrealBuildGraphConfig
     cleanup_after_build : Optional[UnrealCleanupConfig] = None
 
 class UnrealFeature(BaseFeature):
@@ -81,47 +81,18 @@ class UnrealFeature(BaseFeature):
     def render_block(self, block_type: str, context: TemplateContext, template) -> str:
         if block_type == "build_steps":
             jenkins_jobs = self.get_jenkins_jobs(context.feature_config)
+            context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
         return super().render_block(block_type, context, template)
     
     def get_jenkins_jobs(self, config: UnrealConfig) -> str:
         """Generate the Jenkins jobs for Unreal."""
-        module_path = config.project.pyscripts_folder # / "uepyscripts" # / "ci" / "jenkins" / GENERATE_JENKINS_JOBS_MODULE
+        module_path = config.project.pyscripts_folder
         module_name = "uepyscripts.ci.jenkins.generate_jenkins_jobs"
-        arguments = ['--template', 'MY_TEMPLATE', '--target', 'MY_TARGET', '--properties', '{"key1": "value1", "key2": "value2"}']
-        output, result = self.call_external_module(module_path, module_name, arguments )
-        config._accumulator["jenkins_jobs_output"] = output
+
+
+        arguments = ['--target', config.buildgraph.target, '--properties', json.dumps(config.buildgraph.properties)]
+        output, result = call_external_module(module_path, module_name, arguments)
         return output
     
-    def call_external_module(self, package_root_path, module_name, arguments):
-        """
-        Call a function from an external module given its path
-        """
-        original_argv = sys.argv
-        original_path = sys.path.copy()
-        old_stdout = sys.stdout
-        sys.stdout = captured_output = StringIO()
-        
-        try:
-            # Add package root to sys.path
-            abs_package_root = os.path.abspath(package_root_path)
-            if abs_package_root not in sys.path:
-                sys.path.insert(0, abs_package_root)
-            
-            # Set up arguments
-            if arguments:
-                sys.argv = [module_name] + arguments
-            else:
-                sys.argv = [module_name]
-            
-            # Run the module
-            result = runpy.run_module(module_name, run_name='__main__')
-            
-            output = captured_output.getvalue().strip()
-            
-            return output, result
-        finally:
-            # Restore original state
-            sys.argv = original_argv
-            sys.path = original_path
-            sys.stdout = old_stdout
+    

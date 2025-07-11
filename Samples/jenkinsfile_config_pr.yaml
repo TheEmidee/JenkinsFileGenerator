@@ -49,10 +49,10 @@ features:
         url: "git@github.com:Github/Octocat.git"
   unreal:
     project:
-      uproject_path: "E:/Dev/Projects/Summercamp_pyscripts/SummerCamp.uproject"
+      uproject_path: "D:/Projects/Summercamp_pyscripts/SummerCamp.uproject"
     default_node_names: "UE_5.5"
     buildgraph:
-      target: "BuildAndTest XXX"
+      target: "BuildAndTest Summercamp"
       properties:
         Clean: "False"
         Skip_Test_EditorBoot: "True"
