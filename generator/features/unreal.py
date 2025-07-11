@@ -8,9 +8,16 @@ from ..core.base_feature import BaseFeature, FeatureConfig
 from ..core.template_context import TemplateContext
 from ..utils import call_external_module
 
+class UnrealBuildGraphPostTasksConfig(BaseModel):
+    """Configuration for post tasks in Unreal Build Graph."""
+    enabled: bool = True
+    archive_artifacts: Optional[bool] = True
+
 class UnrealBuildGraphConfig(BaseModel):
     target: str
+    node_name_filters: Optional[Dict[str, str]] = None
     properties: Optional[Dict[str,str]] = None
+    post_tasks: Optional[UnrealBuildGraphPostTasksConfig] = UnrealBuildGraphPostTasksConfig()
 
 class UnrealCleanupConfig(BaseModel):
     enabled: Optional[bool] = None

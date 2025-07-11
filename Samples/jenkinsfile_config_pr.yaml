@@ -3,6 +3,7 @@ project:
   name: "summercamp"
 jenkins:
   default_node_names: "UE_5.5"
+  workspace_suffix: "UE_5.5"
 features:
   properties:
     items:
@@ -56,11 +57,18 @@ features:
       uproject_path: "D:/Projects/Summercamp_pyscripts/SummerCamp.uproject"
     buildgraph:
       target: "BuildAndTest Summercamp"
+      node_name_filters:
+        'SummerCamp Editor Win64 Test=BootTest' : '!Builder6-TR'
+        'SummerCamp Win64 Development BootTest' : '!Builder6-TR'
+        'SummerCamp Editor Win64 Test=UE.EditorAutomation' : '!Builder6-TR'
       properties:
         Skip_Test_EditorBoot: "True"
         Skip_Test_TargetBoot: "True"
         Skip_Validation_CompileAllBlueprints: "True"
         Skip_Validation_StaticAnalysis: "True"
+      post_tasks:
+        enabled: true
+        archive_artifacts: true
     cleanup_after_build:
       enabled: true
       additional_node_name: "Win64"

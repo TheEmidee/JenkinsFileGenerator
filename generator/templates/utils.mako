@@ -1,3 +1,21 @@
+// Helper defs used accross multiple mako files
+
+<%def name="initialize_env()">
+initializeEnvironment( this, "${full_config.project.name}" )
+</%def>
+
+<%def name="get_workspace()">
+<%
+suffix = ''
+
+if full_config.jenkins.workspace_suffix is not None:
+    suffix = f', "{full_config.jenkins.workspace_suffix}"'
+%>
+ws( getWorkspace( this ${suffix} ) )
+</%def>
+
+// End of helper defs used accross multiple mako files
+
 <%def name="libraries()">
 @Library('jenkins-utils@master')
 </%def>
@@ -13,5 +31,5 @@ import groovy.transform.Field
 abortPreviousRunningBuilds()
 % endif
 
-initializeEnvironment( this, "${full_config.project.name}" )
+${initialize_env()}
 </%def>
