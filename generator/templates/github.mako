@@ -5,6 +5,7 @@
 <%def name="pre_pipeline_steps()">
 %if feature_config._accumulator.get("get_github_pr_infos") :
 
+def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
 if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
     pull_request_infos = getGitHubPRInfos()
 

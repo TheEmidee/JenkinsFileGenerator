@@ -1,4 +1,8 @@
-name: "test"
+pipeline_name: "test"
+project:
+  name: "summercamp"
+jenkins:
+  default_node_names: "UE_5.5"
 features:
   properties:
     items:
@@ -50,21 +54,13 @@ features:
   unreal:
     project:
       uproject_path: "D:/Projects/Summercamp_pyscripts/SummerCamp.uproject"
-    default_node_names: "UE_5.5"
     buildgraph:
       target: "BuildAndTest Summercamp"
       properties:
-        Clean: "False"
         Skip_Test_EditorBoot: "True"
         Skip_Test_TargetBoot: "True"
         Skip_Validation_CompileAllBlueprints: "True"
-        With_Publish: "True"
-        Package_Publish_WithZip: "True"
-        Package_Publish_Clean: "True"
-        Publish_Directory: "\\\\nas\\Versions\\MyProject\\Nightly\\WIP"
-        Cook_DDCNoShared: "True"
-        CI_BuildId: "`${env.BUILD_NUMBER}"
-        TargetConfigurations: "Development+Shipping"
+        Skip_Validation_StaticAnalysis: "True"
     cleanup_after_build:
       enabled: true
       additional_node_name: "Win64"

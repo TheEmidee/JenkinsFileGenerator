@@ -7,4 +7,3 @@ class TemplateContext:
     full_config: Dict[str, Any]
     feature_config: Dict[str, Any]
     global_values: Dict[str, Any]
-    pipeline_name: str

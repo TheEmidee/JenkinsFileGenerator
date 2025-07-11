@@ -13,7 +13,5 @@ import groovy.transform.Field
 abortPreviousRunningBuilds()
 % endif
 
-initializeEnvironment( this, "${pipeline_name}" )
-
-def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
+initializeEnvironment( this, "${full_config.project.name}" )
 </%def>

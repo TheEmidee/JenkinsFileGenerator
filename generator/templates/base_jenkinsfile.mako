@@ -1,8 +1,9 @@
 ## templates/base_jenkinsfile.mako
 ## Base Jenkinsfile template that combines all feature outputs
 
-// THIS FILE HAS BEEN AUTO-GENERATED USING PYSCRIPTS
-// Version : ${generator_version}
+// THIS FILE HAS BEEN AUTO-GENERATED USING JenkinsFileGenerator
+// Version : ${global_values['generator_version']}
+// Pipeline name : ${full_config.pipeline_name}
 
 ${libraries}
 

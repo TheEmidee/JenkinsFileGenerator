@@ -36,7 +36,6 @@ class JenkinsfileGenerator:
 
         all_blocks = GeneratedBlocks()
         global_values = {
-            'pipeline_name': config.name,
             'generator_version': '1.0.0',
             'output_feature_sections': False
         }
@@ -47,8 +46,7 @@ class JenkinsfileGenerator:
                 context = TemplateContext(
                     full_config=config,
                     feature_config=feature_config,
-                    global_values=global_values,
-                    pipeline_name=config.name
+                    global_values=global_values
                 )
 
                 blocks = feature.render_blocks(context, self.template_lookup)
@@ -92,8 +90,11 @@ class JenkinsfileGenerator:
         try:
             d = {k: "\n".join(v or []) for k, v in blocks.blocks.items()}
             
-            for k, v in global_values.items():
-                d.update( { k: v } )
+            # for k, v in global_values.items():
+            #     d.update( { k: v } )
+
+            d.update( { "global_values" : global_values } )
+            d.update( { "full_config" : config } )
 
             rendered = base_template.render_unicode(**d).strip().encode('utf-8', 'replace')
 

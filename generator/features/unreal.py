@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pathlib import Path
 
@@ -10,7 +10,7 @@ from ..utils import call_external_module
 
 class UnrealBuildGraphConfig(BaseModel):
     target: str
-    properties: Dict[str,str]
+    properties: Optional[Dict[str,str]] = None
 
 class UnrealCleanupConfig(BaseModel):
     enabled: Optional[bool] = None
@@ -77,6 +77,10 @@ class UnrealFeature(BaseFeature):
     
     def get_config_model(self) -> BaseModel:
         return UnrealConfig
+    
+    @property
+    def dependencies(self) -> List[str]:
+        return ["utils"]
     
     def render_block(self, block_type: str, context: TemplateContext, template) -> str:
         if block_type == "build_steps":

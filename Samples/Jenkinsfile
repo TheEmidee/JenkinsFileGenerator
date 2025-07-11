@@ -1,5 +1,6 @@
-// THIS FILE HAS BEEN AUTO-GENERATED USING PYSCRIPTS
+// THIS FILE HAS BEEN AUTO-GENERATED USING JenkinsFileGenerator
 // Version : 1.0.0
+// Pipeline name : test
 
 @Library('slack-notifier@master')
 @Library('jenkins-utils@master')
@@ -14,8 +15,7 @@ buildDiscarder( logRotator( numToKeepStr: '10' ) ),
 pipelineTriggers( [ cron( 'H 3 * * 1-6' ) ] ),
 ])
 
-initializeEnvironment( this, "test" )
-
+initializeEnvironment( this, "summercamp" )
 def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
 if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
     pull_request_infos = getGitHubPRInfos()
@@ -33,7 +33,7 @@ if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
 
 try {
     sendMessageToSlack( channel: "#ci-cd", color: "#0000FF", message: "Build Started" )
-def properties = "-set:Clean=False -set:Skip_Test_EditorBoot=True -set:Skip_Test_TargetBoot=True -set:Skip_Validation_CompileAllBlueprints=True -set:With_Publish=True -set:Package_Publish_WithZip=True -set:Package_Publish_Clean=True -set:Publish_Directory=\\nas\Versions\MyProject\Nightly\WIP -set:Cook_DDCNoShared=True -set:CI_BuildId=`${env.BUILD_NUMBER} -set:TargetConfigurations=Development+Shipping "
+def properties = "-set:Skip_Test_EditorBoot=True -set:Skip_Test_TargetBoot=True -set:Skip_Validation_CompileAllBlueprints=True -set:Skip_Validation_StaticAnalysis=True "
 
         jobs = [:]
 
@@ -42,56 +42,6 @@ def properties = "-set:Clean=False -set:Skip_Test_EditorBoot=True -set:Skip_Test
                     "Compile SummerCampEditor Win64", 
                     [ 
                             "SummerCamp Compile Editor Win64",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Compile SummerCamp Switch Development" ] = {
-                runBuildGraph( 
-                    "Compile SummerCamp Switch Development", 
-                    [ 
-                            "SummerCamp Compile Switch Development",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Compile SummerCamp Win64 Shipping" ] = {
-                runBuildGraph( 
-                    "Compile SummerCamp Win64 Shipping", 
-                    [ 
-                            "SummerCamp Compile Win64 Shipping",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Compile SummerCamp Win64 Development" ] = {
-                runBuildGraph( 
-                    "Compile SummerCamp Win64 Development", 
-                    [ 
-                            "SummerCamp Compile Win64 Development",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Static Analysis Win64" ] = {
-                runBuildGraph( 
-                    "Static Analysis Win64", 
-                    [ 
-                            "Static Analysis Win64",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Compile SummerCamp Switch Shipping" ] = {
-                runBuildGraph( 
-                    "Compile SummerCamp Switch Shipping", 
-                    [ 
-                            "SummerCamp Compile Switch Shipping",
                     ],
                     "Win64",
                     properties 
@@ -152,9 +102,6 @@ def properties = "-set:Clean=False -set:Skip_Test_EditorBoot=True -set:Skip_Test
                     "Package SummerCamp Win64 Development", 
                     [ 
                             "SummerCamp Cook Win64 Development",
-                            "SummerCamp Stage Win64 Development",
-                            "SummerCamp Package Win64 Development",
-                            "SummerCamp Publish Packaged Win64 Development",
                     ],
                     "Win64",
                     properties 
@@ -165,35 +112,6 @@ def properties = "-set:Clean=False -set:Skip_Test_EditorBoot=True -set:Skip_Test
                     "Package SummerCamp Switch Development", 
                     [ 
                             "SummerCamp Cook Switch Development",
-                            "SummerCamp Stage Switch Development",
-                            "SummerCamp Package Switch Development",
-                            "SummerCamp Publish Packaged Switch Development",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Package SummerCamp Switch Shipping" ] = {
-                runBuildGraph( 
-                    "Package SummerCamp Switch Shipping", 
-                    [ 
-                            "SummerCamp Cook Switch Shipping",
-                            "SummerCamp Stage Switch Shipping",
-                            "SummerCamp Package Switch Shipping",
-                            "SummerCamp Publish Packaged Switch Shipping",
-                    ],
-                    "Win64",
-                    properties 
-                    )
-            }
-            jobs[ "Package SummerCamp Win64 Shipping" ] = {
-                runBuildGraph( 
-                    "Package SummerCamp Win64 Shipping", 
-                    [ 
-                            "SummerCamp Cook Win64 Shipping",
-                            "SummerCamp Stage Win64 Shipping",
-                            "SummerCamp Package Win64 Shipping",
-                            "SummerCamp Publish Packaged Win64 Shipping",
                     ],
                     "Win64",
                     properties 
@@ -228,22 +146,6 @@ def sendMessageToSlack( String message, String color, String channel = "#ci-cd" 
 
 def sendBlocksToSlack( blocks, String color, String channel = "#ci-cd" ) {
     slackSend( channel: channel, color: color, blocks: blocks )
-}
-def cleanup( Boolean delete_versions_folder = false ) {
-    node( "UE_5.5 && Win64" ) {
-        initializeEnvironment( this, "MyGame" )
-
-        skipDefaultCheckout()
-
-        ws( getWorkspace( this, "UE_5.5" ) ) {
-            stage ( "Cleanup" ) {
-                
-                def str_value = String.valueOf( delete_versions_folder )
-                
-                // \044 is the octal representation of $
-            }
-        }
-    }
 }
 def canProcessPullRequest( pull_request_infos ) {
     Boolean can_process_build = true
@@ -288,4 +190,21 @@ def getGitHubPRInfos() {
     }
 
     return pull_request_infos
+}
+def cleanup( Boolean delete_versions_folder = false ) {
+        
+    node( "UE_5.5 && Win64" ) {
+        initializeEnvironment( this, "MyGame" )
+
+        skipDefaultCheckout()
+
+        ws( getWorkspace( this, "UE_5.5" ) ) {
+            stage ( "Cleanup" ) {
+                
+                def str_value = String.valueOf( delete_versions_folder )
+                
+                // \044 is the octal representation of $
+            }
+        }
+    }
 }

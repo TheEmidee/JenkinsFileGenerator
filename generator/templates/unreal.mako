@@ -11,7 +11,13 @@ cleanup()
 <%def name="additional_functions()">
 % if feature_config.cleanup_after_build.enabled:
 def cleanup( Boolean delete_versions_folder = false ) {
-    node( "UE_5.5 && Win64" ) {
+    <% 
+    nodes = full_config.jenkins.default_node_names
+
+    if feature_config.cleanup_after_build.additional_node_name.strip():
+        nodes += " && " + feature_config.cleanup_after_build.additional_node_name.strip()
+    %>    
+    node( "${nodes}" ) {
         initializeEnvironment( this, "MyGame" )
 
         skipDefaultCheckout()
