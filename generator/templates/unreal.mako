@@ -11,6 +11,26 @@ cleanup()
 </%def>
 
 <%def name="additional_functions()">
+def executeJobsInParallel(List jobGroup, String properties) {
+    def parallelJobs = [:]
+    
+    jobGroup.each { jobMap ->
+        jobMap.each { jobName, jobConfig ->
+            parallelJobs[jobName] = {
+                runBuildGraph(
+                    jobName,
+                    jobConfig.tasks,
+                    jobConfig.platform,
+                    properties
+                )
+            }
+        }
+    }
+    
+    parallelJobs.failFast = true
+    parallel parallelJobs
+}
+
 def runBuildGraph( group_name, task_names, platform, properties ) {
     def node_name = "${full_config.jenkins.default_node_names} && <%text>${platform}</%text>"
 
@@ -33,7 +53,9 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
 
     node( node_name ) {
         ${utils.initialize_env()}
+        
         skipDefaultCheckout()
+        
         ${utils.get_workspace()}
         {
             gitCheckout()

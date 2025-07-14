@@ -1,12 +1,16 @@
+import importlib
 import json
+import os
+import sys
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pathlib import Path
+from mako.template import Template
 
 from .. import logger
 from ..core.base_feature import BaseFeature, FeatureConfig
 from ..core.template_context import TemplateContext
-from ..utils import call_external_module
+from ..utils.graph import Graph
 
 class UnrealBuildGraphPostTasksConfig(BaseModel):
     """Configuration for post tasks in Unreal Build Graph."""
@@ -99,11 +103,143 @@ class UnrealFeature(BaseFeature):
     def get_jenkins_jobs(self, config: UnrealConfig) -> str:
         """Generate the Jenkins jobs for Unreal."""
         module_path = config.project.pyscripts_folder
-        module_name = "uepyscripts.ci.jenkins.generate_jenkins_jobs"
+        module_name = "uepyscripts.run.buildgraph"
+
+        abs_package_root = os.path.abspath(module_path)
+        if abs_package_root not in sys.path:
+            sys.path.insert(0, abs_package_root)
+
+        uepyscripts = importlib.import_module(module_name)
+        
+        temp_folder = uepyscripts.project.project_folders.saved_folders.temp
+        temp_folder.mkdir(parents=True, exist_ok=True)
+
+        export_path = temp_folder.joinpath("buildgraph.json")
+
+        extra_parameters = [
+            f"-Export={export_path}",
+            "uebp_UATMutexNoWait=1"
+        ]
+
+        output_folder = uepyscripts.project.root_folder.joinpath(uepyscripts.config["Jenkins"]["OutputFolder"])
+        logger.info(f"Output folder : {output_folder}")
+        if not output_folder.exists():
+            raise Exception("The folder where to output the jenkinsfile does not exist")
+
+        uepyscripts.run( config.buildgraph.target, config.buildgraph.properties, extra_parameters )
+
+        def read_json(path : Path) -> str:
+            with open(path) as f:
+                return json.load(f)
+        
+        json_contents = read_json(export_path)
+
+        class BuildNode:
+            def __init__(
+                self,
+                json_node
+            ):
+                self.name = json_node['Name']
+                self.depends_on : list[str] = []
+                
+                depends_on = json_node['DependsOn']
+                if depends_on:
+                    self.depends_on = depends_on.split(';')
+
+        class BuildGroup:
+            def __init__(
+                self,
+                json_node
+            ):
+                self.name = json_node['Name']
+                self.nodes = []
+                for node in json_node['Nodes']:
+                    self.nodes.append(BuildNode(node))
+
+        class BuildPlatform:
+            def __init__(
+                self,
+                name : str
+            ):
+                self.name = name
+                self.job_to_group : dict[str,str] = {}
+                self.groups : dict[str,BuildGroup] = {}
+                self.parallel_groups : list[list[str]] = []
+
+            def parse_group(self,json_node):
+                group = BuildGroup(json_node)
+                self.groups.update( { group.name : group } )
+
+                for node in group.nodes:
+                    self.job_to_group.update( { node.name : group.name } )
+
+            def build_parallel_groups(self):
+                g = Graph()
+
+                for group_name, group in self.groups.items():
+                    for node in group.nodes:
+                        for dependency in node.depends_on:
+                            required_group_name = self.job_to_group[dependency]
+                            if required_group_name != group.name:
+                                g.add_edge(group.name,required_group_name)
+
+                self.parallel_groups = g.topological_sort_with_hierarchy()
+
+        class BuildContext:
+            def __init__(
+                self,
+                json,
+                buildgraph_properties : dict[str,str] = None 
+            ):
+                self.inlined_properties : str = ""
+                self.platforms : dict[str,BuildPlatform] = {}
+
+                if buildgraph_properties is not None:
+                    for key, value in buildgraph_properties.items():
+                        self.inlined_properties += f"-set:{key}={value} "
+
+                for group in json['Groups']:
+                    platform_name = group['Agent Types'][0]
+                    
+                    build_platform : BuildPlatform = None
+                    if platform_name not in self.platforms:
+                        build_platform = BuildPlatform(platform_name)
+                        self.platforms[platform_name] = build_platform
+                    else:
+                        build_platform = self.platforms[platform_name]
+
+                    build_platform.parse_group(group)
+
+                for name, platform in self.platforms.items():
+                    platform.build_parallel_groups()
+
+        TEMPLATE = """
+            def PROPERTIES = "${ctx.inlined_properties}"
+
+            def BUILD_JOBS = [
+        % for platform_name,platform in ctx.platforms.items():
+            % for group_names in platform.parallel_groups:
+                [
+                % for group_name in group_names:
+                    [
+                        "${group_name}": [
+                            tasks: [ ${", ".join(f'"{node.name}"' for node in platform.groups[group_name].nodes)} ],
+                            platform: "${platform_name}"
+                        ],
+                    ],
+                % endfor
+                ],
+            % endfor
+        % endfor
+            ]
+
+            BUILD_JOBS.each { group ->
+                executeJobsInParallel(group, PROPERTIES)
+            }
+        """
 
 
-        arguments = ['--target', config.buildgraph.target, '--properties', json.dumps(config.buildgraph.properties)]
-        output, result = call_external_module(module_path, module_name, arguments)
-        return output
-    
-    
+        build_context = BuildContext(json_contents,config.buildgraph.properties)
+
+        jobs_template = Template(TEMPLATE)
+        return jobs_template.render(ctx=build_context)
