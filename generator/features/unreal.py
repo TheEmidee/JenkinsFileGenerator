@@ -214,9 +214,9 @@ class UnrealFeature(BaseFeature):
                     platform.build_parallel_groups()
 
         TEMPLATE = """
-            def PROPERTIES = "${ctx.inlined_properties}"
+            def buildgraph_properties = "${ctx.inlined_properties}"
 
-            def BUILD_JOBS = [
+            def buildgraph_job_groups = [
         % for platform_name,platform in ctx.platforms.items():
             % for group_names in platform.parallel_groups:
                 [
@@ -233,8 +233,8 @@ class UnrealFeature(BaseFeature):
         % endfor
             ]
 
-            BUILD_JOBS.each { group ->
-                executeJobsInParallel(group, PROPERTIES)
+            buildgraph_job_groups.each { group ->
+                executeJobsInParallel(group, buildgraph_properties)
             }
         """
 

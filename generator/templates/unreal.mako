@@ -62,12 +62,7 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
 
             task_names.each { String task_name ->
                 stage( task_name ) {
-                    fileOperations( 
-                        [ 
-                            fileDeleteOperation( excludes: '', includes: 'Saved\\Jenkins\\*.txt' ),
-                            fileDeleteOperation( excludes: '', includes: 'Saved\\Logs\\*.*' )
-                        ] 
-                    )
+                    preBuildGraphTasks()
 
                     // This should not be added automatically
                     log.info "Net Use"
@@ -83,6 +78,15 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
             }
         }
     }
+}
+
+def preBuildGraphTasks( String task_name ) {
+    fileOperations( 
+        [ 
+            fileDeleteOperation( excludes: '', includes: 'Saved\\Jenkins\\*.txt' ),
+            fileDeleteOperation( excludes: '', includes: 'Saved\\Logs\\*.*' )
+        ] 
+    )
 }
 
 % if feature_config.cleanup_after_build.enabled:
@@ -117,15 +121,16 @@ def postBuildGraphTasks( String task_name ) {
     def warnings_files = findFiles glob: 'Saved\\Jenkins\\*.txt'
 
     <%text>def record_issues_id = "BuildGraph_${task_name}".replaceAll("\\s+", "_");</%text>
+    def quality_gates = [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]
 
     if ( task_name.contains( "Compile" ) ) {
-        recordIssues enabledForFailure: true, failOnError: true, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]], tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/Compile_*.log' ) ]
+        recordIssues enabledForFailure: true, failOnError: true, quality_gates, tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/Compile_*.log' ) ]
     } else if ( task_name.contains( "Static Analysis" ) ) {
-        recordIssues enabledForFailure: true, failOnError: true, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]], tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/StaticAnalysis_*.log' ) ]
+        recordIssues enabledForFailure: true, failOnError: true, quality_gates, tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/StaticAnalysis_*.log' ) ]
     }
 
     if ( warnings_files.length > 0 ) {
-        recordIssues enabledForFailure: true, failOnError: true, qualityGates: [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]], tools: [groovyScript(id: record_issues_id, name: record_issues_id, parserId: 'UE_BuildgraphWarnings', pattern: 'Saved/Jenkins/*.txt')]
+        recordIssues enabledForFailure: true, failOnError: true, quality_gates, tools: [groovyScript(id: record_issues_id, name: record_issues_id, parserId: 'UE_BuildgraphWarnings', pattern: 'Saved/Jenkins/*.txt')]
         % if feature_config.buildgraph.post_tasks.archive_artifacts:
         archiveArtifacts artifacts: 'Saved\\Jenkins\\*.txt', followSymlinks: false
         % endif
