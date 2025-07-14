@@ -83,7 +83,7 @@ class EventDefaults:
     }
     
     EXCEPTION = {
-        'message': 'Build Failed (Reason: ${err})',
+        'message': 'Build Failed. Reason ${e} - ([Node : ${env.NODE_NAME} - Stage : ${env.STAGE_NAME} ])',
         'color': SlackColor.DANGER,
         'simple_enabled': True,
         'blocks_enabled': False

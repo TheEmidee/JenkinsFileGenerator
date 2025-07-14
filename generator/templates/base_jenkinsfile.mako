@@ -27,9 +27,9 @@ try {
     }
 
     ${post_build_steps}
-} catch ( Exception err ) {
+} catch ( Exception e ) {
     ${on_exception_thrown}
-    error "Failed to process : " + err.toString()
+    throw e
 } finally {
     ${on_finally}
 }
