@@ -4,7 +4,7 @@
 
 @Library('slack-notifier@master')
 @Library('jenkins-utils@master')
-@Library('github@master')
+
 
 import org.emidee.jenkins.DeploymentEnvironment
 import org.emidee.jenkins.Environment
@@ -12,7 +12,6 @@ import groovy.transform.Field
 
 properties([
 buildDiscarder( logRotator( numToKeepStr: '10' ) ),
-pipelineTriggers( [ cron( 'H 3 * * 1-6' ) ] ),
 ])
 
 initializeEnvironment( this, "summercamp" )
@@ -32,7 +31,7 @@ if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
 }
 
 try {
-    sendMessageToSlack( channel: "#ci-cd", color: "#0000FF", message: "Build Started" )
+    sendMessageToSlack( channel: "#p-summercamp-ci", color: "#0000FF", message: "Build Started" )
 def properties = "-set:Skip_Test_EditorBoot=True -set:Skip_Test_TargetBoot=True -set:Skip_Validation_CompileAllBlueprints=True -set:Skip_Validation_StaticAnalysis=True "
 
         jobs = [:]
@@ -122,30 +121,26 @@ def properties = "-set:Skip_Test_EditorBoot=True -set:Skip_Test_TargetBoot=True 
         parallel jobs
 
     if ( currentBuild.result == 'UNSTABLE' ) {
-        sendMessageToSlack( channel: "#fubar", color: "warning", message: "Hello world" )
+        sendMessageToSlack( channel: "#p-summercamp-ci", color: "warning", message: "Build Unstable" )
     } else if ( currentBuild.result == 'FAILURE' ) {
-        
+        sendMessageToSlack( channel: "#p-summercamp-ci", color: "danger", message: "Build Failed" )
     } else {
-        sendMessageToSlack( channel: "#ci-cd", color: "good", message: "Build Success" )
-        
-        
-        sendBlocksToSlack( channel: "#so[pihjgosdfhj]", color: "good", blocks: [] )
+        sendMessageToSlack( channel: "#p-summercamp-ci", color: "good", message: "Build Success" )
     }
 
     
 } catch ( Exception err ) {
-    sendMessageToSlack( channel: "#ci-cd", color: "danger", message: "Build Failed (Reason: ${err})" )
+    sendMessageToSlack( channel: "#p-summercamp-ci", color: "danger", message: "Build Failed (Reason: ${err})" )
     error "Failed to process : " + err.toString()
 } finally {
     cleanup()
 }
 
-def sendMessageToSlack( String message, String color, String channel = "#ci-cd" ) {
-    slackSend( channel: channel, color: color, message: message )
+def gitCheckout() {
+    checkout scm
 }
-
-def sendBlocksToSlack( blocks, String color, String channel = "#ci-cd" ) {
-    slackSend( channel: channel, color: color, blocks: blocks )
+def sendMessageToSlack( String message, String color, String channel = "#p-summercamp-ci" ) {
+    slackSend( channel: channel, color: color, message: message )
 }
 def canProcessPullRequest( pull_request_infos ) {
     Boolean can_process_build = true
@@ -260,7 +255,7 @@ ws( getWorkspace( this , "UE_5.5" ) )
                 def str_value = String.valueOf( delete_versions_folder )
                 
                 // \044 is the octal representation of $
-                // :TODO:
+                pwsh script: "Scripts/Project/CI/CI_Cleanup.ps1 -BuildTag \"${BUILD_TAG}\" -DeleteVersionsFolder \044${str_value}"
             }
         }
     }

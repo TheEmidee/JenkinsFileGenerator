@@ -12,7 +12,7 @@ cleanup()
 
 <%def name="additional_functions()">
 def runBuildGraph( group_name, task_names, platform, properties ) {
-    node_name = "${full_config.jenkins.default_node_names} && <%text>${platform}</%text>"
+    def node_name = "${full_config.jenkins.default_node_names} && <%text>${platform}</%text>"
 
     % if feature_config.buildgraph.node_name_filters is not None :
     <%
@@ -36,7 +36,7 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
         skipDefaultCheckout()
         ${utils.get_workspace()}
         {
-            customCheckout()
+            gitCheckout()
 
             task_names.each { String task_name ->
                 stage( task_name ) {
@@ -83,8 +83,7 @@ def cleanup( Boolean delete_versions_folder = false ) {
                 def str_value = String.valueOf( delete_versions_folder )
                 
                 // \044 is the octal representation of $
-                // :TODO:
-                ## pwsh script: "Scripts/Project/CI/CI_Cleanup.ps1 -BuildTag \"${BUILD_TAG}\" -DeleteVersionsFolder \044${str_value}"
+                <%text>pwsh script: "Scripts/Project/CI/CI_Cleanup.ps1 -BuildTag \"${BUILD_TAG}\" -DeleteVersionsFolder \044${str_value}"</%text>
             }
         }
     }

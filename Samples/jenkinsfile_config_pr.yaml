@@ -8,7 +8,6 @@ features:
   properties:
     items:
       - "buildDiscarder( logRotator( numToKeepStr: '10' ) )"
-      - "pipelineTriggers( [ cron( 'H 3 * * 1-6' ) ] )"
   github:
     credentials_id: "Emidee_Access_Token"
     pull_requests:
@@ -19,23 +18,10 @@ features:
         message: "This pull request is ignored because the token ${foundToken} was found in the title."
       update_description_from_pr_body: true
   slack_notifications:
-    channel: "#ci-cd"
+    channel: "#p-summercamp-ci"
     message_template: " : ${env.JOB_NAME} - ${env.CHANGE_BRANCH} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
-    on_success:
-      blocks_message:
-        enabled: true
-        channel_override: "#so[pihjgosdfhj]"
-        # blocks: "slack_failure_blocks" //:TODO: Update the feature to load a JSON file
-    on_failure:
-      simple_message:
-        enabled: false
-    on_unstable:
-      simple_message:
-        channel_override: "#fubar"
-        message: "Hello world"
   git:
-    use_simple_checkout: false
-    branch_name: "refs/heads/develop"
+    use_simple_checkout: true
     extensions:
       CheckoutOption:
         timeout: 120
@@ -48,19 +34,15 @@ features:
         trackingSubmodules: false
       GitLFSPull:
         enabled: true
-    user_remote_config:
-      credentials_id:
-        id: "CredentialId"
-        url: "git@github.com:Github/Octocat.git"
   unreal:
     project:
-      uproject_path: "D:/Projects/Summercamp_pyscripts/SummerCamp.uproject"
+      uproject_path: "E:/Dev/Projects/Summercamp_pyscripts/SummerCamp.uproject"
     buildgraph:
       target: "BuildAndTest Summercamp"
       node_name_filters:
-        'SummerCamp Editor Win64 Test=BootTest' : '!Builder6-TR'
-        'SummerCamp Win64 Development BootTest' : '!Builder6-TR'
-        'SummerCamp Editor Win64 Test=UE.EditorAutomation' : '!Builder6-TR'
+        "SummerCamp Editor Win64 Test=BootTest": "!Builder6-TR"
+        "SummerCamp Win64 Development BootTest": "!Builder6-TR"
+        "SummerCamp Editor Win64 Test=UE.EditorAutomation": "!Builder6-TR"
       properties:
         Skip_Test_EditorBoot: "True"
         Skip_Test_TargetBoot: "True"

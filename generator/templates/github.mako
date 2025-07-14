@@ -1,20 +1,20 @@
 <%def name="libraries()">
-@Library('github@master')
 </%def>
 
 <%def name="pre_pipeline_steps()">
 %if feature_config._accumulator.get("get_github_pr_infos") :
 
 def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
+
 if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
-    pull_request_infos = getGitHubPRInfos()
+    def pull_request_infos = getGitHubPRInfos()
 
     % if feature_config._accumulator.get("update_job_description_from_pr") :
     updateJobDescriptionFromPR( pull_request_infos )
     % endif
 
     % if feature_config._accumulator.get("can_process_pull_request") :
-    ( can_process_build, message, build_result ) = canProcessBuild( pull_request_infos )
+    def ( can_process_build, message, build_result ) = canProcessPullRequest( pull_request_infos )
 
     if ( !can_process_build ) {
         log.info message
@@ -53,7 +53,7 @@ def canProcessPullRequest( pull_request_infos ) {
 % endif
 
 % if feature_config._accumulator.get("update_job_description_from_pr"):
-def updateJobDescriptionFromPR() {
+def updateJobDescriptionFromPR( pull_request_infos ) {
     if ( pull_request_infos == null ) {
         return
     }

@@ -1,22 +1,15 @@
+<%def name="get_slack_channel(message_config, type='SlackNotificationMessageConfig')"><%
+channel_override = message_config.channel_override.strip()
+channel = (", " + channel_override) if channel_override and channel_override != feature_config.channel else ""
+%>${channel}</%def>
+
 <%def name="try_send_message(event, type='SlackNotificationEventConfig')">
     
     % if event.simple_message.enabled:
-        <%
-            channel = feature_config.channel
-            if event.simple_message.channel_override.strip():
-                channel = event.simple_message.channel_override.strip()
-        %>
-        
-        sendMessageToSlack( channel: "${channel}", color: "${event.simple_message.color}", message: "${event.simple_message.message}" )
+        sendMessageToSlack( "${event.simple_message.message}", "${event.simple_message.color}" ${get_slack_channel(event.simple_message).strip()} )
     % endif
     % if event.blocks_message.enabled:
-        <%
-            channel = feature_config.channel
-            if event.blocks_message.channel_override.strip():
-                channel = event.blocks_message.channel_override.strip()
-        %>
-        
-        sendBlocksToSlack( channel: "${channel}", color: "${event.blocks_message.color}", blocks: [] )
+        sendBlocksToSlack( [], "${event.blocks_message.color}" ${get_slack_channel(event.blocks_message).strip()} )
     % endif
 </%def>
 
@@ -47,7 +40,7 @@ ${try_send_message(event=feature_config.on_exception)}
 <%def name="additional_functions()">
 % if feature_config._accumulator.get("generate_send_message"):
 def sendMessageToSlack( String message, String color, String channel = "${feature_config.channel}" ) {
-    slackSend( channel: channel, color: color, message: message )
+    slackSend( channel: channel, color: color, message: message + "${feature_config.message_template}" )
 }
 % endif
 
