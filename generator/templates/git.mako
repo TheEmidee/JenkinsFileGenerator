@@ -1,3 +1,5 @@
+<%namespace name="groovy" module="generator.utils.groovy"/>
+
 <%def name="additional_functions()">
 def gitCheckout() {
 % if feature_config.use_simple_checkout:
@@ -17,7 +19,7 @@ def gitCheckout() {
                 $class: '${options.get_class_name()}'${',' if should_emit else ''}
                 % if should_emit:
                     % for k, v in options.dict().items():
-                ${k}: ${utils.write_groovy_repr(v)}${',' if not loop.last else ''}
+                ${k}: ${groovy.write_groovy_repr(v)}${',' if not loop.last else ''}
                     % endfor
                 % endif
             ],
