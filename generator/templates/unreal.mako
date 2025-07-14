@@ -64,9 +64,9 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
                 stage( task_name ) {
                     preBuildGraphTasks()
 
-                    // This should not be added automatically
-                    log.info "Net Use"
-                    pwsh script: "Scripts/Project/CI/CI_NetUse.ps1"
+                    % for pre_task in feature_config.buildgraph.pre_tasks:
+                    ${pre_task}
+                    % endfor
 
                     <%text>log.info "Execute Buildgraph : ${task_name}"</%text>
                     <%text>pwsh script: "Scripts/Project/CI/CI_RunBuildGraph.ps1 \"${task_name}\" \"${BUILD_TAG}\" \"${properties}\""</%text>

@@ -21,6 +21,7 @@ class UnrealBuildGraphConfig(BaseModel):
     target: str
     node_name_filters: Optional[Dict[str, str]] = None
     properties: Optional[Dict[str,str]] = None
+    pre_tasks: Optional[List[str]] = None
     post_tasks: Optional[UnrealBuildGraphPostTasksConfig] = UnrealBuildGraphPostTasksConfig()
 
 class UnrealCleanupConfig(BaseModel):
