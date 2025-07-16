@@ -1,6 +1,6 @@
 pipeline_name: "test"
 project:
-  name: "summercamp"
+  name: "project"
 jenkins:
   default_node_names: "UE_5.5"
   workspace_suffix: "UE_5.5"
@@ -18,7 +18,7 @@ features:
         message: "This pull request is ignored because the token ${foundToken} was found in the title."
       update_description_from_pr_body: true
   slack_notifications:
-    channel: "#p-summercamp-ci"
+    channel: "#p-project-ci"
     message_template: " : ${env.JOB_NAME} - ${env.CHANGE_BRANCH} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
   git:
     use_simple_checkout: true
@@ -36,13 +36,13 @@ features:
         enabled: true
   unreal:
     project:
-      uproject_path: "E:/Dev/Projects/Summercamp_pyscripts/SummerCamp.uproject"
+      uproject_path: "E:/Dev/Projects/MyGame_pyscripts/MyGame.uproject"
     buildgraph:
-      target: "BuildAndTest Summercamp"
+      target: "BuildAndTest MyGame"
       node_name_filters:
-        "SummerCamp Editor Win64 Test=BootTest": "!Builder6-TR"
-        "SummerCamp Win64 Development BootTest": "!Builder6-TR"
-        "SummerCamp Editor Win64 Test=UE.EditorAutomation": "!Builder6-TR"
+        "MyGame Editor Win64 Test=BootTest": "!Builder6-TR"
+        "MyGame Win64 Development BootTest": "!Builder6-TR"
+        "MyGame Editor Win64 Test=UE.EditorAutomation": "!Builder6-TR"
       properties:
         Skip_Test_EditorBoot: "True"
         Skip_Test_TargetBoot: "True"
