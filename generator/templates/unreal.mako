@@ -68,8 +68,17 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
                     ${pre_task}
                     % endfor
 
-                    <%text>log.info "Execute Buildgraph : ${task_name}"</%text>
-                    <%text>pwsh script: "Scripts/Project/CI/CI_RunBuildGraph.ps1 \"${task_name}\" \"${BUILD_TAG}\" \"${properties}\""</%text>
+                    <%text>
+                    pwsh """
+                        ."PyScripts/Tools/PyScript.ps1" `
+                            -moduleName "uepyscripts.tools.ci.buildgraph" `
+                            -arguments @{ 
+                                target = "${task_name}" 
+                                build_tag = "${BUILD_TAG}"
+                                string_arguments = "${properties}"
+                            }
+                    """
+                    </%text>
 
                     % if feature_config.buildgraph.post_tasks.enabled:
                     postBuildGraphTasks( task_name )
