@@ -1,4 +1,5 @@
 <%def name="libraries()">
+@Library('jenkins-github@develop')
 </%def>
 
 <%def name="pre_pipeline_steps()">
@@ -71,7 +72,7 @@ def getGitHubPRInfos() {
 
     if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
         withCredentials( [ string( credentialsId: '${feature_config.credentials_id}', variable: 'GITHUB_ACCESS_TOKEN' ) ] ) {
-            pull_request_infos = getGitHubCurrentPullRequestInfos( this, GITHUB_ACCESS_TOKEN, "FishingCactus", Environment.instance.PROJECT_NAME )
+            pull_request_infos = getGitHubCurrentPullRequestInfos( this, GITHUB_ACCESS_TOKEN, "${feature_config.owner}", "${feature_config.repository}" )
         }
     }
 

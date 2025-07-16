@@ -31,6 +31,8 @@ class GitHubPullRequestConfig(BaseModel):
 
 class GitHubConfig(FeatureConfig):
     """Configuration model for the GitHub feature."""
+    owner: str = Field( description="The GitHub owner of the repository." )
+    repository: str = Field( description="The GitHub repository name." )
     credentials_id: str = Field( description="The jenkins credentials id that is associated with the GITHUB_TOKEN." )
     pull_requests: Optional[GitHubPullRequestConfig] = None
 
