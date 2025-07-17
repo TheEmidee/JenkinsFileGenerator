@@ -1,9 +1,33 @@
 from pathlib import Path
+import subprocess
 import sys
 
 from . import logger
 from .core.jenkins_file_generator import JenkinsfileGenerator
 from .features import *
+
+def lint_output(output_file:Path):
+    try:
+        logger.info(f"Running npm-groovy-lint on {output_file}")
+
+        cmd = ["npx.cmd", "npm-groovy-lint", "--format", str(output_file)]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=False,
+            text=True,
+            check=True
+        )
+        logger.info("Linting completed successfully")
+        if result.stdout:
+            logger.info(f"Lint output: {result.stdout}")
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Linting failed with exit code {e.returncode}")
+        logger.error(f"Error output: {e.stderr}")
+        raise e
+    except FileNotFoundError:
+        logger.error("npm-groovy-lint not found. Please ensure it's installed and in your PATH")
+        raise e
 
 def main():
     """Main CLI entry point"""
@@ -12,8 +36,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate Jenkins pipeline from YAML config')
     parser.add_argument('config', type=Path, help='YAML configuration file')
     parser.add_argument('-o', '--output', type=Path, help='Output Jenkinsfile path')
-    parser.add_argument('--validate-only', action='store_true', help='Only validate config')
-    parser.add_argument('--list-features', action='store_true', help='List available features')
+    parser.add_argument('--lint', action='store_true', help='Runs npm-groovy-lint on the generated file')
     
     args = parser.parse_args()
 
@@ -21,19 +44,8 @@ def main():
         generator = JenkinsfileGenerator()
         generator.generate_jenkinsfile(args.config, args.output)
 
-        # if args.validate_only:
-        #     with open(args.config, 'r') as f:
-        #         config_data = yaml.safe_load(f)
-        #     config = PipelineConfig(**config_data)
-        #     logger.info(f"✓ Configuration is valid")
-        #     logger.info(f"  Pipeline: {config.name}")
-        #     feature_registry.dump_available_features()
-
-    #     else:
-    #         output_path = args.output or Path("Jenkinsfile")
-    #         content = generator.generate_from_config_file(args.config, output_path)
-    #         print(f"✓ Generated Jenkinsfile: {output_path}")
-            
+        if args.lint:
+            lint_output(args.output)
     except Exception as e:
         logger.error(f"{e}")
         sys.exit(1)
