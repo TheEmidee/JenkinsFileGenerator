@@ -99,13 +99,13 @@ def preBuildGraphTasks() {
 }
 
 % if feature_config.cleanup_after_build.enabled:
-def cleanup( Boolean delete_versions_folder = false ) {
+def cleanup() {
     <% 
     nodes = full_config.jenkins.default_node_names
 
     if feature_config.cleanup_after_build.additional_node_name.strip():
         nodes += " && " + feature_config.cleanup_after_build.additional_node_name.strip()
-    %>    
+    %>
     node( "${nodes}" ) {
         ${utils.initialize_env()}
 
@@ -114,11 +114,15 @@ def cleanup( Boolean delete_versions_folder = false ) {
         ${utils.get_workspace()}
         {
             stage ( "Cleanup" ) {
-                
-                def str_value = String.valueOf( delete_versions_folder )
-                
-                // \044 is the octal representation of $
-                <%text>pwsh script: "Scripts/Project/CI/CI_Cleanup.ps1 -BuildTag \"${BUILD_TAG}\" -DeleteVersionsFolder \044${str_value}"</%text>
+                <%text>
+                pwsh """
+                    ."PyScripts/Tools/PyScript.ps1" `
+                        -moduleName "uepyscripts.tools.ci.cleanup" `
+                        -arguments @{ 
+                            build_tag = "${BUILD_TAG}"
+                        }
+                """
+                </%text>
             }
         }
     }
