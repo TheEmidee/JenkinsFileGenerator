@@ -111,8 +111,10 @@ def cleanup() {
 
         skipDefaultCheckout()
 
-        ${utils.get_workspace()}
+        ${utils.get_workspace()} 
         {
+            gitCheckout()
+
             stage ( "Cleanup" ) {
                 <%text>
                 pwsh """
