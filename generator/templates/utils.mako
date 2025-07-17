@@ -17,13 +17,12 @@ ws( getWorkspace( this ${suffix} ) )
 // End of helper defs used accross multiple mako files
 
 <%def name="libraries()">
-@Library('jenkins-utils@master')
+@Library('jenkins-utils@no_github')
 </%def>
 
 <%def name="imports()">
 import org.emidee.jenkins.DeploymentEnvironment
 import org.emidee.jenkins.Environment
-import groovy.transform.Field
 </%def>
 
 <%def name="pre_pipeline_steps()">

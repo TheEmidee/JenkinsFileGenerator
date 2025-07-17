@@ -31,8 +31,8 @@ def executeJobsInParallel(List jobGroup, String properties) {
     parallel parallelJobs
 }
 
-def runBuildGraph( group_name, task_names, platform, properties ) {
-    def node_name = "${full_config.jenkins.default_node_names} && <%text>${platform}</%text>"
+def runBuildGraph( groupName, taskNames, platform, properties ) {
+    def nodeName = "${full_config.jenkins.default_node_names} && <%text>${platform}</%text>"
 
     % if feature_config.buildgraph.node_name_filters is not None :
     <%
@@ -40,18 +40,18 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
     items = ", ".join(items)
     %>
 
-    def node_name_filters = [ ${items} ]
+    def nodeNameFilters = [ ${items} ]
 
-    if ( !node_name_filters.isEmpty() ) {
-        def node_name_filter = node_name_filters.get( group_name, "" )
+    if ( !nodeNameFilters.isEmpty() ) {
+        def node_name_filter = nodeNameFilters.get( groupName, "" )
 
         if ( node_name_filter?.trim() ) {
-            node_name += "&& <%text>${node_name_filter}</%text>"
+            nodeName += "&& <%text>${node_name_filter}</%text>"
         }
     }
     % endif
 
-    node( node_name ) {
+    node( nodeName ) {
         ${utils.initialize_env()}
         
         skipDefaultCheckout()
@@ -60,8 +60,8 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
         {
             gitCheckout()
 
-            task_names.each { String task_name ->
-                stage( task_name ) {
+            taskNames.each { String taskName ->
+                stage( taskName ) {
                     preBuildGraphTasks()
 
                     % for pre_task in feature_config.buildgraph.pre_tasks:
@@ -73,7 +73,7 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
                         ."PyScripts/Tools/PyScript.ps1" `
                             -moduleName "uepyscripts.tools.ci.buildgraph" `
                             -arguments @{ 
-                                target = "${task_name}" 
+                                target = "${taskName}" 
                                 build_tag = "${BUILD_TAG}"
                                 string_arguments = "${properties}"
                             }
@@ -81,7 +81,7 @@ def runBuildGraph( group_name, task_names, platform, properties ) {
                     </%text>
 
                     % if feature_config.buildgraph.post_tasks.enabled:
-                    postBuildGraphTasks( task_name )
+                    postBuildGraphTasks( taskName )
                     % endif
                 }
             }
@@ -132,15 +132,15 @@ def cleanup() {
 % endif
 
 % if feature_config.buildgraph.post_tasks.enabled:
-def postBuildGraphTasks( String task_name ) {
+def postBuildGraphTasks( String taskName ) {
     def warnings_files = findFiles glob: 'Saved\\Jenkins\\*.txt'
 
-    <%text>def record_issues_id = "BuildGraph_${task_name}".replaceAll("\\s+", "_");</%text>
+    <%text>def record_issues_id = "BuildGraph_${task_name}".replaceAll('\\s+', '_');</%text>
     def quality_gates = [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]
 
-    if ( task_name.contains( "Compile" ) ) {
+    if ( taskName.contains( "Compile" ) ) {
         recordIssues enabledForFailure: true, failOnError: true, qualityGates : quality_gates, tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/Compile_*.log' ) ]
-    } else if ( task_name.contains( "Static Analysis" ) ) {
+    } else if ( taskName.contains( "Static Analysis" ) ) {
         recordIssues enabledForFailure: true, failOnError: true, qualityGates : quality_gates, tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/StaticAnalysis_*.log' ) ]
     }
 
@@ -151,8 +151,9 @@ def postBuildGraphTasks( String task_name ) {
         % endif
     }
 
-    if ( fileExists ( 'Saved\\Tests\\Logs\\FunctionalTestsResults.xml' ) ) {
-        junit testResults: "Saved\\Tests\\Logs\\FunctionalTestsResults.xml"
+    def functional_tests_results_path = 'Saved\\Tests\\Logs\\FunctionalTestsResults.xml'
+    if ( fileExists( functional_tests_results_path ) ) {
+        junit testResults: functional_tests_results_path
         % if feature_config.buildgraph.post_tasks.archive_artifacts:
         archiveArtifacts artifacts: 'Saved\\Tests\\Logs\\*.xml', followSymlinks: false
         % endif

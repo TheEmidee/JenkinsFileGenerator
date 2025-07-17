@@ -5,21 +5,21 @@
 <%def name="pre_pipeline_steps()">
 %if feature_config._accumulator.get("get_github_pr_infos") :
 
-def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
+def deploymentEnvironment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
 
-if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
-    def pull_request_infos = getGitHubPRInfos()
+if ( deploymentEnvironment == DeploymentEnvironment.PullRequest ) {
+    def pullRequestInfos = getGitHubPullRequestInfos()
 
     % if feature_config._accumulator.get("update_job_description_from_pr") :
-    updateJobDescriptionFromPR( pull_request_infos )
+    updateJobDescriptionFromPullRequest( pullRequestInfos )
     % endif
 
     % if feature_config._accumulator.get("can_process_pull_request") :
-    def ( can_process_build, message, build_result ) = canProcessPullRequest( pull_request_infos )
+    def ( canProcessBuild, message, buildResult ) = canProcessPullRequest( pullRequestInfos )
 
-    if ( !can_process_build ) {
+    if ( !canProcessBuild ) {
         log.info message
-        currentBuild.result = build_result
+        currentBuild.result = buildResult
         return
     }
     % endif
@@ -30,53 +30,53 @@ if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
 
 <%def name="additional_functions()">
 % if feature_config._accumulator.get("can_process_pull_request"):
-def canProcessPullRequest( pull_request_infos ) {
-    Boolean can_process_build = true
-    String pr_title = ""
+def canProcessPullRequest( pullRequestInfos ) {
+    Boolean canProcessBuild = true
+    String pullRtequestTitle = ""
     String message = ""
-    String build_result = ""
+    String buildResult = ""
 
-    if ( pull_request_infos != null ) {
-        pr_title = pull_request_infos.title
+    if ( pullRequestInfos != null ) {
+        pullRtequestTitle = pullRequestInfos.title
     }
 
     def tokens = ${feature_config.pull_requests.filter.tokens}
-    def foundToken = tokens.find { token -> pr_title.toLowerCase().contains(token.toLowerCase()) }
+    def foundToken = tokens.find { token -> pullRtequestTitle.toLowerCase().contains(token.toLowerCase()) }
 
     if ( foundToken ) {
-        can_process_build = false
+        canProcessBuild = false
         message = "${feature_config.pull_requests.filter.message}"
-        build_result = 'NOT_BUILT'
+        buildResult = 'NOT_BUILT'
     }
 
-    return [ can_process_build, message, build_result ]
+    return [ canProcessBuild, message, buildResult ]
 }
 % endif
 
 % if feature_config._accumulator.get("update_job_description_from_pr"):
-def updateJobDescriptionFromPR( pull_request_infos ) {
-    if ( pull_request_infos == null ) {
+def updateJobDescriptionFromPullRequest( pullRequestInfos ) {
+    if ( pullRequestInfos == null ) {
         return
     }
 
-    def pr_body = pull_request_infos.body
+    def pr_body = pullRequestInfos.body
     currentBuild.description = pr_body
 }
 % endif
 
 % if feature_config._accumulator.get("get_github_pr_infos"):
-def getGitHubPRInfos() {
-    def pull_request_infos = null
+def getGitHubPullRequestInfos() {
+    def pullRequestInfos = null
 
-    def deployment_environment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
+    def deploymentEnvironment = Environment.instance.DEPLOYMENT_ENVIRONMENT as DeploymentEnvironment
 
-    if ( deployment_environment == DeploymentEnvironment.PullRequest ) {
+    if ( deploymentEnvironment == DeploymentEnvironment.PullRequest ) {
         withCredentials( [ string( credentialsId: '${feature_config.credentials_id}', variable: 'GITHUB_ACCESS_TOKEN' ) ] ) {
-            pull_request_infos = getGitHubCurrentPullRequestInfos( this, GITHUB_ACCESS_TOKEN, "${feature_config.owner}", "${feature_config.repository}" )
+            pullRequestInfos = getGitHubCurrentPullRequestInfos( this, GITHUB_ACCESS_TOKEN, "${feature_config.owner}", "${feature_config.repository}" )
         }
     }
 
-    return pull_request_infos
+    return pullRequestInfos
 }
 % endif
 </%def>
