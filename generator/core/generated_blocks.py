@@ -28,6 +28,6 @@ class GeneratedBlocks:
         """Merge this instance with another GeneratedBlocks instance."""
         for key, value in other.blocks.items():
             if key in self.blocks:
-                self.blocks[key].extend(value)
+                self.blocks[key].extend([" "] + value)
             else:
                 self.blocks[key] = list(value)
