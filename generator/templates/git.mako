@@ -9,11 +9,11 @@ def gitCheckout() {
         $class: 'GitSCM',
         branches: 
         [ 
-            { 'name': '${feature_config.branch_name}' } 
+            { 'name': '${feature_config.checkout.branch_name}' } 
         ],
         extensions: 
         [
-        % for key, options in feature_config.extensions.items():
+        % for key, options in feature_config.checkout.extensions.items():
             <% should_emit = options.should_emit() %>
             [
                 $class: '${options.get_class_name()}'${',' if should_emit else ''}
@@ -26,7 +26,7 @@ def gitCheckout() {
         % endfor
         ], 
         userRemoteConfigs: [
-            [ credentialsId: '${feature_config.user_remote_config.credentials_id.id}', url: '${feature_config.user_remote_config.credentials_id.url}' ]
+            [ credentialsId: '${feature_config.checkout.user_remote_config.credentials_id.id}', url: '${feature_config.checkout.user_remote_config.credentials_id.url}' ]
         ]
     ])
 % endif

@@ -1,17 +1,17 @@
 from abc import ABC
 from typing import Any, Dict, Optional
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from ..core.base_feature import BaseFeature, FeatureConfig
+from generator.core.base_feature import BaseFeature, FeatureConfig
 
 class CredentialsIdConfig(BaseModel):
-    id: str
-    url: str
+    id: str = Field( description="The jenkins credential id to use to connect to the url." )
+    url: str = Field( description="The git url to use to checkout the repository." )
 
 class UserRemoteConfig(BaseModel):
-    credentials_id: CredentialsIdConfig
+    credentials_id: CredentialsIdConfig = Field( description="The credentials ID and URL for the remote repository." )
 
-class GitExtension(BaseModel,ABC):
+class GitExtensionConfig(BaseModel,ABC):
     def should_emit(self):
         return True
     
@@ -23,7 +23,7 @@ class GitExtension(BaseModel,ABC):
             return class_name[:-6]
         return class_name
 
-class SubmoduleOptionConfig(GitExtension):
+class SubmoduleOptionConfig(GitExtensionConfig):
     disableSubmodules: Optional[bool] = None
     parentCredentials: Optional[bool] = None
     recursiveSubmodules: Optional[bool] = None
@@ -31,43 +31,28 @@ class SubmoduleOptionConfig(GitExtension):
     timeout: Optional[int] = None
     trackingSubmodules: Optional[bool] = None
 
-class GitLFSPullConfig(GitExtension):
-    enabled: bool = False
+class GitLFSPullConfig(GitExtensionConfig):
+    """Configuration for Git LFS pull."""
+    enabled: bool = Field( default=False, description="Set to true to pull from LFS." )
 
     def should_emit(self):
         return False
 
-class CheckoutOptionConfig(GitExtension):
-    timeout: Optional[int] = None
+class CheckoutOptionConfig(GitExtensionConfig):
+    """Configuration for checkout options."""
+    timeout: Optional[int] = Field( default=None, description="Timeout for the checkout operation in seconds." )
 
 def get_config_class_name(yaml_key : str) -> str:
     return globals()[ yaml_key + "Config" ]
 
-class GitConfig(FeatureConfig):
-    """Configuration model for the git properties."""
-    use_simple_checkout : bool = True
-    branch_name: Optional[str] = None
-    extensions: Dict[str, GitExtension]
-    user_remote_config: Optional[UserRemoteConfig] = None
+class GitCheckoutConfig(BaseModel):
+    branch_name: str = Field( description="The branch name to checkout" )
+    extensions: Dict[str, GitExtensionConfig] = Field( default={}, description="The extensions to use for the checkout" )
+    user_remote_config: UserRemoteConfig = Field( description="The user remote configuration." )
 
-    @model_validator(mode='before')
-    @classmethod
-    def validate_configuration(cls, values):
-        if isinstance(values, dict):
-            use_simple_checkout = values.get('use_simple_checkout')
-            
-            if use_simple_checkout is False:
-                # When use_simple_checkout is False, we need the full configuration
-                if not values.get('branch_name'):
-                    raise ValueError('branch_name is required when use_simple_checkout is False')
-                if not values.get('user_remote_config'):
-                    raise ValueError('user_remote_config is required when use_simple_checkout is False')
-        
-        return values
-    
     @field_validator("extensions", mode="before")
     @classmethod
-    def validate_extensions(cls, raw_exts: Dict[str, Any]) -> Dict[str, GitExtension]:
+    def validate_extensions(cls, raw_exts: Dict[str, Any]) -> Dict[str, GitExtensionConfig]:
         parsed_exts = {}
         for key, value in raw_exts.items():
             model_cls = get_config_class_name(key)
@@ -75,6 +60,11 @@ class GitConfig(FeatureConfig):
                 raise ValueError(f"Unknown extension key: {key}")
             parsed_exts[key] = model_cls(**value)
         return parsed_exts
+
+class GitConfig(FeatureConfig):
+    """Configuration model for the git properties."""
+    use_simple_checkout : bool = Field( default=True, description="Set to true to uses a simple `checkout scm`. Otherwise fine-tune the checkout with the other properties" )
+    checkout: Optional[GitCheckoutConfig] = Field( default=None, description="The checkout configuration. If use_simple_checkout is true, this will be ignored." )
 
 class GitFeature(BaseFeature):
     """Feature for defining the git properties."""

@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from ..core.base_feature import BaseFeature, FeatureConfig
+from generator.core.base_feature import BaseFeature, FeatureConfig
 
 class SlackColor(str, Enum):
     """Predefined Slack colors for consistency."""
@@ -20,9 +20,9 @@ class SlackColor(str, Enum):
         return super()._missing_(value)
 
 class SlackNotificationMessageConfig(BaseModel,ABC):
-    enabled: Optional[bool] = None
-    color: Optional[str] = None
-    channel_override : str = ""
+    enabled: Optional[bool] = Field( default=None, description="Whether this notification type is enabled." )
+    color: Optional[str] = Field( default=None, description="Color for the notification in slack." )
+    channel_override : str = Field( default="", description="Channel override for this message." )
 
     @field_validator('color', mode='before')
     @classmethod
@@ -33,12 +33,12 @@ class SlackNotificationMessageConfig(BaseModel,ABC):
         return v
 
 class SlackNotificationSimpleMessageConfig(SlackNotificationMessageConfig):
-    enabled: bool = True
-    message: str = ""
+    enabled: bool = Field(default=True, description="Whether to send a simple text message.")
+    message: str = Field(default="", description="The message to send.")
 
 class SlackNotificationBlocksMessageConfig(SlackNotificationMessageConfig):
-    enabled: bool = False
-    blocks: str = ""
+    enabled: bool = Field(default=False, description="Whether to send a blocks message.")
+    blocks: str = Field(default="", description="The blocks to send.")
 
     @field_validator('blocks')
     @classmethod
@@ -90,8 +90,8 @@ class EventDefaults:
     }
 
 class SlackNotificationEventConfig(BaseModel,ABC):
-    simple_message: SlackNotificationSimpleMessageConfig = Field(default_factory=SlackNotificationSimpleMessageConfig)
-    blocks_message: SlackNotificationBlocksMessageConfig = Field(default_factory=SlackNotificationBlocksMessageConfig)
+    simple_message: SlackNotificationSimpleMessageConfig = Field(default_factory=SlackNotificationSimpleMessageConfig, description="Configuration for simple message notifications.")
+    blocks_message: SlackNotificationBlocksMessageConfig = Field(default_factory=SlackNotificationBlocksMessageConfig, description="Configuration for blocks message notifications.")
     
     def get_defaults(self) -> Dict[str, Any]:
         """Override in subclasses to provide event-specific defaults."""
@@ -159,18 +159,18 @@ class SlackNotificationOnExceptionEventConfig(SlackNotificationEventConfig):
         return EventDefaults.EXCEPTION
 
 class SlackNotificationsConfig(FeatureConfig):
-    """Configuration model for Slack notifications."""
-    channel: str
-    message_template: str = None
+    """Configuration for Slack notifications."""
+    channel: str = Field( description="The Slack channel or user to send notifications to. Must start with # for channels or @ for users." )
+    message_template: str = Field( description="Template for the message to be sent. Can include variables like env.BUILD_URL, env.JOB_NAME, etc." )
     
     # Event configurations with proper defaults
-    pre_build_step: SlackNotificationPreBuildStepEventConfig = Field(default_factory=SlackNotificationPreBuildStepEventConfig)
-    on_success: SlackNotificationOnSuccessEventConfig = Field(default_factory=SlackNotificationOnSuccessEventConfig)
-    on_failure: SlackNotificationOnFailureEventConfig = Field(default_factory=SlackNotificationOnFailureEventConfig)
-    on_unstable: SlackNotificationOnUnstableEventConfig = Field(default_factory=SlackNotificationOnUnstableEventConfig)
-    on_exception: SlackNotificationOnExceptionEventConfig = Field(default_factory=SlackNotificationOnExceptionEventConfig)
+    pre_build_step: SlackNotificationPreBuildStepEventConfig = Field(default_factory=SlackNotificationPreBuildStepEventConfig, description="Configuration for the notifications sent during the pre-build step phase.")
+    on_success: SlackNotificationOnSuccessEventConfig = Field(default_factory=SlackNotificationOnSuccessEventConfig, description="Configuration for the notifications sent during the on-sucess step phase.")
+    on_failure: SlackNotificationOnFailureEventConfig = Field(default_factory=SlackNotificationOnFailureEventConfig, description="Configuration for the notifications sent during the on-failure step phase.")
+    on_unstable: SlackNotificationOnUnstableEventConfig = Field(default_factory=SlackNotificationOnUnstableEventConfig, description="Configuration for the notifications sent during the on-unstable step phase.")
+    on_exception: SlackNotificationOnExceptionEventConfig = Field(default_factory=SlackNotificationOnExceptionEventConfig, description="Configuration for the notifications sent during the on-exception step phase.")
 
-    webhook_credential_id: Optional[str] = None
+    webhook_credential_id: Optional[str] = Field( default=None, description="The Jenkins credentials ID for the Slack webhook." )
 
     @field_validator('channel')
     @classmethod

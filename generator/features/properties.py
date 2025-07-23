@@ -1,10 +1,14 @@
 from typing import Any, Dict, List
 from pydantic import BaseModel
 
-from ..core.base_feature import BaseFeature, FeatureConfig
+from generator.core.base_feature import BaseFeature, FeatureConfig
 
 class PropertiesConfig(FeatureConfig):
-    """Configuration model for the pipeline properties."""
+    """Configuration for the pipeline properties.
+    You must type the properties exactly as you would in a Jenkinsfile.
+    For example:
+    buildDiscarder( logRotator( numToKeepStr: '10' ) )
+    """
     items: List[str] = None
 
 class PropertiesFeature(BaseFeature):

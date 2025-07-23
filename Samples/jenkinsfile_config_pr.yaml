@@ -5,10 +5,14 @@ jenkins:
   default_node_names: "UE_5.5"
   workspace_suffix: "UE_5.5"
 features:
+  utils:
+    abort_running_builds: true
   properties:
     items:
       - "buildDiscarder( logRotator( numToKeepStr: '10' ) )"
   github:
+    owner: "FishingCactus"
+    repository: "Summercamp"
     credentials_id: "Emidee_Access_Token"
     pull_requests:
       filter:
@@ -21,7 +25,8 @@ features:
     channel: "#p-project-ci"
     message_template: " : ${env.JOB_NAME} - ${env.CHANGE_BRANCH} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
   git:
-    use_simple_checkout: true
+    use_simple_checkout: false
+    branch_name: "develop"
     extensions:
       CheckoutOption:
         timeout: 120
@@ -34,6 +39,10 @@ features:
         trackingSubmodules: false
       GitLFSPull:
         enabled: true
+    user_remote_config:
+      credentials_id:
+        id: "origin"
+        url: "foo"
   unreal:
     project:
       uproject_path: "E:/Dev/Projects/MyGame_pyscripts/MyGame.uproject"

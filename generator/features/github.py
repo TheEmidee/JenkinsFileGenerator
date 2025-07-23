@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from ..core.base_feature import BaseFeature, FeatureConfig
+from generator.core.base_feature import BaseFeature, FeatureConfig
 
 class GitHubPullRequestFilterConfig(BaseModel):
     """Configuration model for pull request filter."""
@@ -25,16 +25,16 @@ class GitHubPullRequestFilterConfig(BaseModel):
         return message
 
 class GitHubPullRequestConfig(BaseModel):
-    """Configuration model for pull request utilities."""
+    """Configuration for pull request utilities."""
     filter: Optional[GitHubPullRequestFilterConfig] = Field( default=None, description="Filter configuration for pull requests, e.g., tokens to ignore." )
     update_description_from_pr_body: Optional[bool] = Field( default=None, description="If true, updates the current build description with the body of the pull request." )
 
 class GitHubConfig(FeatureConfig):
-    """Configuration model for the GitHub feature."""
+    """Configuration for the GitHub feature."""
     owner: str = Field( description="The GitHub owner of the repository." )
     repository: str = Field( description="The GitHub repository name." )
     credentials_id: str = Field( description="The jenkins credentials id that is associated with the GITHUB_TOKEN." )
-    pull_requests: Optional[GitHubPullRequestConfig] = None
+    pull_requests: Optional[GitHubPullRequestConfig] = Field( default=None, description="Configuration for the pull requests" )
 
     def model_post_init(self, context):
         self._accumulator["update_job_description_from_pr"] = self.pull_requests.update_description_from_pr_body if self.pull_requests else False

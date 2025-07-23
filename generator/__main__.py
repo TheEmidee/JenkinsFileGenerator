@@ -2,6 +2,9 @@ from pathlib import Path
 import subprocess
 import sys
 
+from generator.core.pipeline_config import PipelineConfig
+from generator.documentation.documentation_generator import DocumentationGenerator
+
 from . import logger
 from .core.jenkins_file_generator import JenkinsfileGenerator
 from .features import *
@@ -37,8 +40,18 @@ def main():
     parser.add_argument('config', type=Path, help='YAML configuration file')
     parser.add_argument('-o', '--output', type=Path, help='Output Jenkinsfile path')
     parser.add_argument('--lint', action='store_true', help='Runs npm-groovy-lint on the generated file')
+    parser.add_argument('--generate_documentation', action='store_true', help='Generates the documentation')
     
     args = parser.parse_args()
+
+    if args.generate_documentation:
+        try:
+            documentation_generator = DocumentationGenerator()
+            documentation_generator.generate_documentation()
+            # sys.exit(0)
+        except Exception as e:
+            logger.error(f"{e}")
+            sys.exit(1)
 
     try:
         generator = JenkinsfileGenerator()
