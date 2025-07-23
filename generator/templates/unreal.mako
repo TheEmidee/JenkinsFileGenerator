@@ -135,7 +135,7 @@ def cleanup() {
 def postBuildGraphTasks( String taskName ) {
     def warnings_files = findFiles glob: 'Saved\\Jenkins\\*.txt'
 
-    <%text>def record_issues_id = "BuildGraph_${task_name}".replaceAll('\\s+', '_');</%text>
+    <%text>def record_issues_id = "BuildGraph_${taskName}".replaceAll('\\s+', '_');</%text>
     def quality_gates = [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]
 
     if ( taskName.contains( "Compile" ) ) {
