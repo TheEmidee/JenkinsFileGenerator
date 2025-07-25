@@ -40,12 +40,14 @@ python -m generator <config_file> [options]
 
 ### Arguments
 
-| Argument                   | Type | Required | Description                               |
-| -------------------------- | ---- | -------- | ----------------------------------------- |
-| `config`                   | Path | Yes      | Path to the YAML configuration file       |
-| `-o, --output`             | Path | No       | Output path for the generated Jenkinsfile |
-| `--lint`                   | Flag | No       | Run npm-groovy-lint on the generated file |
-| `--generate_documentation` | Flag | No       | Generate configuration documentation      |
+| Argument                   | Type | Required | Description                                        |
+| -------------------------- | ---- | -------- | ---------------------------------------------------|
+| `config`                   | Path | Yes      | Path to the YAML configuration file                |
+| `-o, --output`             | Path | No       | Output path for the generated Jenkinsfile          |
+| `--lint`                   | Flag | No       | Run npm-groovy-lint on the generated file          |
+| `--generate_documentation` | Flag | No       | Generate configuration documentation               |
+| `--validate`               | Flag | No       | Validates the config file and the mako templates   |
+| `--list_features`          | Flag | No       | Output the registered features in the console      |
 
 ### Examples
 
