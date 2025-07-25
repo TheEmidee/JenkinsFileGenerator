@@ -1,4 +1,5 @@
 import logging
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -6,6 +7,7 @@ import sys
 from generator import logger
 from generator.core.config_validator import ConfigValidator
 from generator.core.jenkins_file_generator import JenkinsfileGenerator
+from generator.core.template_validator import TemplateValidator
 from generator.documentation.documentation_generator import DocumentationGenerator
 from generator.features import *
 
@@ -121,20 +123,13 @@ Examples:
         if not args.no_validation:
             logger.info("Step 1/3: Validating configuration...")
             
-            validator = ConfigValidator()
-            messages = validator.validate_config_file(args.config)
-            
-            if messages and not args.quiet:
-                validator.print_messages(show_info=args.verbose)
-                print(f"\n{validator.get_summary()}")
-            
-            if validator.has_errors():
-                logger.error("❌ Configuration validation failed! Use --no-validation to skip (not recommended)")
+            config_validator = ConfigValidator(args.config)
+            if not config_validator.validate(not args.quiet):
                 return 1
-            elif validator.has_warnings():
-                logger.warning("⚠️  Configuration has warnings but is valid")
-            else:
-                logger.info("✅ Configuration validation passed!")
+
+            templates_validator = TemplateValidator(args.config)
+            if not templates_validator.validate(not args.quiet):
+                return 1
         else:
             logger.warning("⚠️  Skipping configuration validation (--no-validation flag used)")
 

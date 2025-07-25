@@ -1,11 +1,11 @@
-from pathlib import Path
 from typing import Any, Dict, List
 from mako.lookup import TemplateLookup
 
-import os
 import yaml
 
-from .. import logger
+from generator import logger
+from generator.core import constants
+
 from .template_context import TemplateContext
 from .pipeline_config import PipelineConfig
 from .generated_blocks import GeneratedBlocks
@@ -17,10 +17,7 @@ class JenkinsfileGenerator:
     """Main generator class that orchestrates the entire process."""
 
     def __init__(self):
-        file_path = os.path.realpath(__file__)
-        templates_dir = os.path.join(os.path.dirname(file_path), "../templates")
-
-        self.templates_dir = Path(templates_dir)
+        self.templates_dir = constants.TEMPLATES_FOLDER
         self.template_lookup = TemplateLookup( directories=[str(self.templates_dir)] )
         self.base_template_path = "base_jenkinsfile.mako"
 

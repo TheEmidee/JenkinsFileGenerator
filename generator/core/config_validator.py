@@ -2,45 +2,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from pydantic import ValidationError
-from yaml import MappingNode, SafeLoader
-import traceback
 
 import yaml
 
-from generator import logger
+from generator.core.base_validator import BaseValidator, ValidationMessage
 from generator.core.feature_registry import FeatureRegistry
 from generator.core.pipeline_config import PipelineConfig
 
 @dataclass
-class ValidationMessage:
-    """Represents a validation error or warning with location info"""
-    level: str  # 'error', 'warning', 'info'
-    message: str
-    file_path: Optional[str] = None
-    line_number: Optional[int] = None
-    column: Optional[int] = None
-    field_path: Optional[str] = None
-    suggestion: Optional[str] = None
-    
-    def __str__(self):
-        location = ""
-        if self.file_path:
-            location += f"File: {self.file_path}"
-        if self.line_number:
-            location += f", Line: {self.line_number}"
-        if self.column:
-            location += f", Column: {self.column}"
-        if self.field_path:
-            location += f", Field: {self.field_path}"
-        
-        result = f"[{self.level.upper()}] {self.message}"
-        if location:
-            result += f" ({location})"
-        if self.suggestion:
-            result += f"\n  💡 Suggestion: {self.suggestion}"
-        
-        return result
-
+class ConfigValidationMessage(ValidationMessage):
+    def get_context_output_name(self) -> str:
+        return "Field"
 
 class LineTrackingDict(dict):
     """Dictionary that tracks line numbers for YAML parsing"""
@@ -51,7 +23,6 @@ class LineTrackingDict(dict):
     def get_line_number(self, key_path: str) -> Optional[int]:
         """Get line number for a given key path like 'features.git.use_simple_checkout'"""
         return self._line_map.get(key_path)
-
 
 class LineTrackingLoader(yaml.SafeLoader):
     """YAML loader that tracks line numbers for each key"""
@@ -89,45 +60,25 @@ class LineTrackingLoader(yaml.SafeLoader):
                     self._track_mapping_lines(value_node)
                     self.key_stack.pop()
 
-class ConfigValidator:
+class ConfigValidator(BaseValidator):
     """Enhanced configuration validator with detailed error reporting"""
     
-    def __init__(self):
-        self.messages: List[ValidationMessage] = []
-        self.config_path: Optional[Path] = None
+    def __init__(self, config_path: Path):
+        super(ConfigValidator, self).__init__()
+        self.config_path : Path = config_path
         self.raw_config: Optional[LineTrackingDict] = None
     
-    def validate_config_file(self, config_path: Path) -> List[ValidationMessage]:
-        """
-        Validate a configuration file and return detailed validation messages.
-        
-        Args:
-            config_path: Path to the YAML configuration file
-            
-        Returns:
-            List of validation messages (errors, warnings, info)
-        """
-        self.messages.clear()
-        self.config_path = config_path
-        
-        try:
-            # Step 1: Basic file validation
-            self._validate_file_exists()
-            
-            # Step 2: YAML syntax validation with line tracking
-            self._validate_yaml_syntax()
-            
-            # Step 3: Schema validation
-            self._validate_schema()
-            
-            # Step 4: Feature-specific validation
-            self._validate_features()
-            
-        except Exception as e:
-            self._add_message('error', f"Unexpected validation error: {str(e)}")
-            logger.error(f"Validation exception: {traceback.format_exc()}")
-        
-        return self.messages
+    def _validate_internal(self ):
+        self._validate_file_exists()
+        self._validate_yaml_syntax()
+        self._validate_schema()
+        self._validate_features()
+
+    def _get_validation_identifier(self) -> str:
+        return "Configuration"
+    
+    def _get_file_path(self) -> Path:
+        return self.config_path
     
     def _validate_file_exists(self):
         """Check if config file exists and is readable"""
@@ -149,9 +100,9 @@ class ConfigValidator:
             self._check_yaml_common_issues(content)
             
             # Load with line tracking
-            self.raw_config = yaml.load(content, Loader=LineTrackingLoader)
+            raw_config = yaml.load(content, Loader=LineTrackingLoader)
             
-            if self.raw_config is None:
+            if raw_config is None:
                 self._add_message('error', "Configuration file is empty")
                 raise ValueError("Empty configuration file")
                 
@@ -194,8 +145,10 @@ class ConfigValidator:
     def _validate_schema(self):
         """Validate against the main PipelineConfig schema"""
         try:
-            validated_config = PipelineConfig(**self.raw_config)
-            self.validated_config = validated_config
+            with open(self.config_path, 'r') as f:
+                yaml_contents = yaml.safe_load(f)
+                validated_config = PipelineConfig(**yaml_contents)
+                self.validated_config = validated_config                
             
         except ValidationError as e:
             for error in e.errors():
@@ -213,7 +166,7 @@ class ConfigValidator:
                     'error',
                     message,
                     line_number=line_number,
-                    field_path=field_path,
+                    context=field_path,
                     suggestion=suggestion
                 )
     
@@ -239,7 +192,7 @@ class ConfigValidator:
                     'error',
                     f"Unknown feature: '{feature_name}'",
                     line_number=line_number,
-                    field_path=f'features.{feature_name}',
+                    context=f'features.{feature_name}',
                     suggestion=suggestion
                 )
                 continue
@@ -262,14 +215,14 @@ class ConfigValidator:
                         'error',
                         f"Feature '{feature_name}': {message}",
                         line_number=line_number,
-                        field_path=field_path,
+                        context=field_path,
                         suggestion=suggestion
                     )
             except Exception as e:
                 self._add_message(
                     'error',
                     f"Feature '{feature_name}' validation failed: {str(e)}",
-                    field_path=f'features.{feature_name}'
+                    context=f'features.{feature_name}'
                 )
     
     def _format_pydantic_error(self, error: Dict[str, Any], field_path: str) -> str:
@@ -328,61 +281,3 @@ class ConfigValidator:
                 similar.append(feature)
         
         return similar[:3]  # Return top 3 matches
-    
-    def _add_message(self, level: str, message: str, line_number: Optional[int] = None, 
-                    column: Optional[int] = None, field_path: Optional[str] = None,
-                    suggestion: Optional[str] = None):
-        """Add a validation message"""
-        self.messages.append(ValidationMessage(
-            level=level,
-            message=message,
-            file_path=str(self.config_path) if self.config_path else None,
-            line_number=line_number,
-            column=column,
-            field_path=field_path,
-            suggestion=suggestion
-        ))
-    
-    def has_errors(self) -> bool:
-        """Check if there are any error-level messages"""
-        return any(msg.level == 'error' for msg in self.messages)
-    
-    def has_warnings(self) -> bool:
-        """Check if there are any warning-level messages"""
-        return any(msg.level == 'warning' for msg in self.messages)
-    
-    def print_messages(self, show_info: bool = True):
-        """Print all validation messages with colors"""
-        try:
-            from colorama import Fore, Style, init
-            init()  # Initialize colorama
-            
-            colors = {
-                'error': Fore.RED,
-                'warning': Fore.YELLOW,
-                'info': Fore.BLUE
-            }
-        except ImportError:
-            # Fallback without colors
-            colors = {'error': '', 'warning': '', 'info': ''}
-            Style.RESET_ALL = ''
-        
-        for msg in self.messages:
-            if not show_info and msg.level == 'info':
-                continue
-                
-            color = colors.get(msg.level, '')
-            print(f"{color}{msg}{Style.RESET_ALL}")
-    
-    def get_summary(self) -> str:
-        """Get a summary of validation results"""
-        error_count = sum(1 for msg in self.messages if msg.level == 'error')
-        warning_count = sum(1 for msg in self.messages if msg.level == 'warning')
-        info_count = sum(1 for msg in self.messages if msg.level == 'info')
-        
-        if error_count == 0 and warning_count == 0:
-            return f"✅ Configuration is valid! ({info_count} info messages)"
-        elif error_count == 0:
-            return f"⚠️  Configuration is valid with {warning_count} warnings ({info_count} info messages)"
-        else:
-            return f"❌ Configuration has {error_count} errors and {warning_count} warnings"

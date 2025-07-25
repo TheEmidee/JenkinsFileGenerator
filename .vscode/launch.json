@@ -6,9 +6,9 @@
       "request": "launch",
       "module": "generator",
       "args": [
-        "E:/Dev/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Config/jenkinsfile_pull_request.yaml",
+        "D:/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Config/jenkinsfile_pull_request.yaml",
         "--output",
-        "E:/Dev/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Jenkinsfile",
+        "D:/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Jenkinsfile",
         "--lint"
       ]
     }
