@@ -2,12 +2,13 @@ import logging
 from pathlib import Path
 
 from generator import logger
-from generator.core.config_validator import ConfigValidator
+from generator.core.feature_registry import list_all_features
 from generator.core.jenkins_file_generator import JenkinsfileGenerator
-from generator.core import linter
-from generator.core.template_validator import TemplateValidator
-from generator.documentation.documentation_generator import DocumentationGenerator
+from generator.utils import linter
+from generator.utils.documentation_generator import generate_documentation
 from generator.features import *
+from generator.utils.validation.config_validator import ConfigValidator
+from generator.utils.validation.template_validator import TemplateValidator
 
 def main():
     """Main CLI entry point"""
@@ -38,6 +39,7 @@ Examples:
     mode_group = parser.add_mutually_exclusive_group()
     mode_group.add_argument('--validate', action='store_true', help='Validate configuration only (no generation)')
     mode_group.add_argument('--generate-documentation', action='store_true', help='Generate configuration documentation')
+    mode_group.add_argument('--list_features', action='store_true', help='Output all the registered features')
     
     parser.add_argument('--lint', action='store_true', help='Run npm-groovy-lint on the generated file')
     parser.add_argument('--no-validation', action='store_true', help='Skip configuration validation (not recommended)')
@@ -53,15 +55,10 @@ Examples:
         logger.setLevel(logging.DEBUG)
 
     if args.generate_documentation:
-        try:
-            logger.info("Generating documentation...")
-            documentation_generator = DocumentationGenerator()
-            documentation_generator.generate_documentation()
-            logger.info("✅ Documentation generated successfully!")
-            return 0
-        except Exception as e:
-            logger.error(f"Documentation generation failed: {e}")
-            return 1
+        return generate_documentation()
+        
+    if args.list_features:
+        return list_all_features()
         
     if not args.config:
         parser.error("Configuration file is required (except for --generate-documentation)")

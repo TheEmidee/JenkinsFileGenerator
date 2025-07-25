@@ -318,3 +318,14 @@ class DocumentationGenerator:
             pass
         
         return False
+    
+def generate_documentation() -> int:
+    try:
+        logger.info("Generating documentation...")
+        documentation_generator = DocumentationGenerator()
+        documentation_generator.generate_documentation()
+        logger.info("✅ Documentation generated successfully!")
+        return 0
+    except Exception as e:
+        logger.error(f"Documentation generation failed: {e}")
+        return 1

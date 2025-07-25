@@ -1,17 +1,14 @@
 import re
 from pathlib import Path
-from typing import List, Optional
 from dataclasses import dataclass
 from mako.template import Template
 from mako.exceptions import CompileException, SyntaxException
 from mako.lookup import TemplateLookup
-import yaml
 
 from generator import logger
 from generator.core import constants
-from generator.core.base_validator import BaseValidator, ValidationMessage
+from generator.utils.validation.base_validator import BaseValidator, ValidationMessage
 from generator.core.feature_registry import FeatureRegistry
-from generator.core.pipeline_config import PipelineConfig
 
 @dataclass
 class TemplateValidationMessage(ValidationMessage):

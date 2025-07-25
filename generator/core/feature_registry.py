@@ -1,6 +1,6 @@
 from typing import Dict, List, Type
 
-from .. import logger
+from generator import logger
 
 class FeatureRegistry:
     """Registry for auto-discovering and managing features"""
@@ -45,3 +45,14 @@ class FeatureRegistry:
             add_missing_dependencies(feature)
 
         return selected_features
+    
+def list_all_features():
+    try:
+        logger.info("List of all the registered features:")
+        for _, feature_class in FeatureRegistry().get_all_features().items():
+            logger.info(f"Feature: {feature_class.feature_name}")
+
+        return 0
+    except Exception as e:
+        logger.error(f"Error while listing the registered features: {e}")
+        return 1
