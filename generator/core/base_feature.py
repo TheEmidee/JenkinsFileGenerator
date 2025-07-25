@@ -42,13 +42,13 @@ class BaseFeature(ABC):
         """Return the Pydantic model for validating this feature's config."""
         pass
 
-    def get_feature_config(self, full_config: PipelineConfig) -> Dict[str, Any]:
+    def get_feature_config(self, full_config: PipelineConfig, context: Any) -> Dict[str, Any]:
         """Extract and validate this feature's config from the full config."""
         feature_config = full_config.features.get(self.feature_name, {})
         
         config_model = self.get_config_model()
         try:
-            validated = config_model(**feature_config)
+            validated = config_model.model_validate(feature_config, context=context)
             return validated
         except ValidationError as e:
             raise ValueError(f"Invalid config for feature '{self.feature_name}': {e}")
