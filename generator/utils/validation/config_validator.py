@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 import yaml
 
-from generator.core.base_validator import BaseValidator, ValidationMessage
+from generator.utils.validation.base_validator import BaseValidator, ValidationMessage
 from generator.core.feature_registry import FeatureRegistry
 from generator.core.pipeline_config import PipelineConfig
 

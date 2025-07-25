@@ -9,7 +9,6 @@
         "D:/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Config/jenkinsfile_pull_request.yaml",
         "--output",
         "D:/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Jenkinsfile",
-        "--lint"
       ]
     }
   ]
