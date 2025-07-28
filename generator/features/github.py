@@ -1,3 +1,5 @@
+"""This module defines the GitHub-related features and configurations for Jenkins pipelines."""
+
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
@@ -57,7 +59,9 @@ class GitHubConfig(FeatureConfig):
         default=None, description="Configuration for the pull requests"
     )
 
-    def model_post_init(self, context):
+    def model_post_init(self, __context) -> None:
+        """Pydantic post-initialization."""
+
         self._accumulator["update_job_description_from_pr"] = (
             self.pull_requests.update_description_from_pr_body
             if self.pull_requests

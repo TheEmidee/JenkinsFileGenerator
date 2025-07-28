@@ -1,3 +1,5 @@
+"""Container for all generated code blocks."""
+
 from dataclasses import dataclass, field
 from typing import Dict, List
 

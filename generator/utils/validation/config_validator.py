@@ -1,3 +1,6 @@
+"""This module provides a configuration validator for validating YAML configuration files.
+It checks for syntax errors, schema compliance, and feature availability."""
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -12,6 +15,8 @@ from generator.core.pipeline_config import PipelineConfig
 
 @dataclass
 class ConfigValidationMessage(ValidationMessage):
+    """Represents a validation error or warning with location info for configuration files"""
+
     def get_context_output_name(self) -> str:
         return "Field"
 
@@ -46,8 +51,8 @@ class LineTrackingLoader(yaml.SafeLoader):
         # Convert to LineTrackingDict if this is the root mapping
         if not self.key_stack:  # Root level
             return LineTrackingDict(result, self.line_map)
-        else:
-            return result
+
+        return result
 
     def _track_mapping_lines(self, node):
         """Track line numbers for all keys in a mapping node"""
@@ -72,6 +77,7 @@ class ConfigValidator(BaseValidator):
         super(ConfigValidator, self).__init__()
         self.config_path: Path = config_path
         self.raw_config: Optional[LineTrackingDict] = None
+        self.validated_config: Optional[PipelineConfig] = None
 
     def _validate_internal(self):
         self._validate_file_exists()
@@ -152,13 +158,12 @@ class ConfigValidator(BaseValidator):
     def _validate_schema(self):
         """Validate against the main PipelineConfig schema"""
         try:
-            with open(self.config_path, "r") as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 yaml_contents = yaml.safe_load(f)
-                validation_context = {"config_file_path": self.config_path}
-                validated_config = PipelineConfig(
-                    **yaml_contents, context=validation_context
+
+                self.validated_config = PipelineConfig(
+                    **yaml_contents, context={"config_file_path": self.config_path}
                 )
-                self.validated_config = validated_config
 
         except ValidationError as e:
             for error in e.errors():
@@ -169,7 +174,7 @@ class ConfigValidator(BaseValidator):
                 if hasattr(self.raw_config, "get_line_number"):
                     line_number = self.raw_config.get_line_number(field_path)
 
-                message = self._format_pydantic_error(error, field_path)
+                message = self._format_pydantic_error(error)
                 suggestion = self._get_error_suggestion(error, field_path)
 
                 self._add_message(
@@ -187,7 +192,7 @@ class ConfigValidator(BaseValidator):
 
         feature_registry = FeatureRegistry()
 
-        for feature_name, feature_config in self.validated_config.features.items():
+        for feature_name in self.validated_config.features.keys():
             # Check if feature exists
             available_features = feature_registry.get_all_features()
             if feature_name not in available_features:
@@ -237,7 +242,7 @@ class ConfigValidator(BaseValidator):
                         else None
                     )
 
-                    message = self._format_pydantic_error(error, field_path)
+                    message = self._format_pydantic_error(error)
                     suggestion = self._get_error_suggestion(error, field_path)
 
                     self._add_message(
@@ -254,23 +259,23 @@ class ConfigValidator(BaseValidator):
                     context=f"features.{feature_name}",
                 )
 
-    def _format_pydantic_error(self, error: Dict[str, Any], field_path: str) -> str:
+    def _format_pydantic_error(self, error: Dict[str, Any]) -> str:
         """Format a Pydantic validation error into a readable message"""
         error_type = error.get("type", "unknown")
         input_value = error.get("input")
 
         if error_type == "missing":
-            return f"Required field is missing"
-        elif error_type == "string_type":
+            return "Required field is missing"
+        if error_type == "string_type":
             return f"Expected string, got {type(input_value).__name__}: {input_value}"
-        elif error_type == "bool_parsing":
+        if error_type == "bool_parsing":
             return f"Expected boolean (true/false), got: {input_value}"
-        elif error_type == "int_parsing":
+        if error_type == "int_parsing":
             return f"Expected integer, got: {input_value}"
-        elif error_type == "value_error":
+        if error_type == "value_error":
             return f"Invalid value: {error.get('msg', str(input_value))}"
-        else:
-            return error.get("msg", f"Validation error: {error_type}")
+        
+        return error.get("msg", f"Validation error: {error_type}")
 
     def _get_error_suggestion(
         self, error: Dict[str, Any], field_path: str
@@ -284,13 +289,13 @@ class ConfigValidator(BaseValidator):
             elif "name" in field_path:
                 return "Add a name field with your project name"
 
-        elif error_type == "bool_parsing":
+        if error_type == "bool_parsing":
             return "Use true or false (lowercase, no quotes)"
 
-        elif error_type == "string_type":
+        if error_type == "string_type":
             return "Wrap the value in quotes if it contains special characters"
 
-        elif "url" in field_path.lower():
+        if "url" in field_path.lower():
             return "Ensure the URL starts with http:// or https://"
 
         return None

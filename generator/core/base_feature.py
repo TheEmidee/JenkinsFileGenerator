@@ -1,3 +1,8 @@
+"""This module defines the base feature class and configuration model for the Jenkinsfile generator.
+It provides the structure for all pipeline features, including methods for rendering templates
+and validating configurations.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Type
 from pydantic import BaseModel, PrivateAttr, ValidationError
@@ -10,6 +15,8 @@ from generator.core.feature_registry import FeatureRegistry
 
 
 class FeatureConfig(BaseModel, ABC):
+    """Base class for feature configuration models."""
+
     _accumulator: Dict[str, Any] = PrivateAttr(default_factory=dict)
 
 
@@ -37,12 +44,10 @@ class BaseFeature(ABC):
     @abstractmethod
     def should_include(self, config: Dict[str, Any]) -> bool:
         """Determine if this feature should be included based on config."""
-        pass
 
     @abstractmethod
     def get_config_model(self) -> Type[BaseModel]:
         """Return the Pydantic model for validating this feature's config."""
-        pass
 
     def get_feature_config(
         self, full_config: PipelineConfig, context: Any
@@ -55,7 +60,7 @@ class BaseFeature(ABC):
             validated = config_model.model_validate(feature_config, context=context)
             return validated
         except ValidationError as e:
-            raise ValueError(f"Invalid config for feature '{self.feature_name}': {e}")
+            raise ValueError(f"Invalid config for feature '{self.feature_name}': {e}") from e
 
     def render_blocks(
         self, context: TemplateContext, template_lookup: TemplateLookup
@@ -63,10 +68,10 @@ class BaseFeature(ABC):
         """Render all template blocks for this feature."""
         try:
             template = template_lookup.get_template(self.template_path)
-        except Exception as e:
+        except Exception as exc:
             raise FileNotFoundError(
                 f"Template not found for feature '{self.feature_name}': {self.template_path}"
-            )
+            ) from exc
 
         blocks = GeneratedBlocks()
 
@@ -74,7 +79,7 @@ class BaseFeature(ABC):
             try:
                 block = self.render_block(block_type, context, template)
                 block_value.append(block)
-            except AttributeError as e:
+            except AttributeError:
                 # Block not defined in template - that's OK
                 pass
             except Exception as e:

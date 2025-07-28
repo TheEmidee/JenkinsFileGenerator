@@ -1,3 +1,5 @@
+"""TemplateValidator class for validating Mako templates in the JenkinsFileGenerator project."""
+
 import re
 from pathlib import Path
 from dataclasses import dataclass
@@ -13,6 +15,8 @@ from generator.core.feature_registry import FeatureRegistry
 
 @dataclass
 class TemplateValidationMessage(ValidationMessage):
+    """Extended validation message for template-specific context"""
+
     def get_context_output_name(self) -> str:
         return "Context"
 
@@ -21,7 +25,7 @@ class TemplateValidator(BaseValidator):
     """Validates Mako template syntax and usage"""
 
     def __init__(self, config_path: Path):
-        super(TemplateValidator, self).__init__()
+        super().__init__()
         self.templates_dir = constants.TEMPLATES_FOLDER
         self.template_lookup = TemplateLookup(directories=[str(self.templates_dir)])
         self.config_path = config_path
@@ -38,9 +42,8 @@ class TemplateValidator(BaseValidator):
                 "No template files found",
                 suggestion="Ensure template files have .mako extension",
             )
-            return self.messages
 
-        logger.info(f"Validating {len(template_files)} template files...")
+        logger.info("Validating %s template files...", len(template_files))
 
         for template_file in template_files:
             self._validate_template_file(template_file)
@@ -50,7 +53,7 @@ class TemplateValidator(BaseValidator):
 
     def _validate_template_file(self, template_path: Path):
         """Validate a single template file"""
-        logger.debug(f"Validating template: {template_path}")
+        logger.debug("Validating template: %s", template_path)
 
         try:
             # Read template content
@@ -115,14 +118,11 @@ class TemplateValidator(BaseValidator):
     def _validate_mako_compilation(self, template_path: Path, content: str):
         """Validate that Mako can compile the template"""
         try:
-            # Try to compile the template
-            template = Template(content, filename=str(template_path))
+            Template(content, filename=str(template_path))
 
             # Also test with template lookup (for includes/inheritance)
             try:
-                template_from_lookup = self.template_lookup.get_template(
-                    template_path.name
-                )
+                self.template_lookup.get_template(template_path.name)
             except Exception as e:
                 self._add_message(
                     "warning",

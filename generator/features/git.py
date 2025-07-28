@@ -1,11 +1,15 @@
+"""This module defines the Git-related features and configurations for Jenkins pipelines."""
+
 from abc import ABC
 from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
 
 
 class CredentialsIdConfig(BaseModel):
+    """Configuration for credentials ID used in Git operations."""
+
     id: str = Field(
         description="The jenkins credential id to use to connect to the url."
     )
@@ -13,13 +17,18 @@ class CredentialsIdConfig(BaseModel):
 
 
 class UserRemoteConfig(BaseModel):
+    """Configuration for user remote settings in Git operations."""
+
     credentials_id: CredentialsIdConfig = Field(
         description="The credentials ID and URL for the remote repository."
     )
 
 
 class GitExtensionConfig(BaseModel, ABC):
+    """Base class for Git extension configurations."""
+
     def should_emit(self):
+        """Determine if this extension should emit text in the Jenkinsfile."""
         return True
 
     @classmethod
@@ -32,6 +41,8 @@ class GitExtensionConfig(BaseModel, ABC):
 
 
 class SubmoduleOptionConfig(GitExtensionConfig):
+    """Configuration for submodule options in Git operations."""
+
     disableSubmodules: Optional[bool] = None
     parentCredentials: Optional[bool] = None
     recursiveSubmodules: Optional[bool] = None
@@ -57,11 +68,9 @@ class CheckoutOptionConfig(GitExtensionConfig):
     )
 
 
-def get_config_class_name(yaml_key: str) -> str:
-    return globals()[yaml_key + "Config"]
-
-
 class GitCheckoutConfig(BaseModel):
+    """Configuration for the Git checkout operation."""
+
     branch_name: str = Field(description="The branch name to checkout")
     extensions: Dict[str, GitExtensionConfig] = Field(
         default={}, description="The extensions to use for the checkout"
@@ -75,8 +84,13 @@ class GitCheckoutConfig(BaseModel):
     def validate_extensions(
         cls, raw_exts: Dict[str, Any]
     ) -> Dict[str, GitExtensionConfig]:
+        """Validate and parse the extensions dictionary."""
         parsed_exts = {}
         for key, value in raw_exts.items():
+
+            def get_config_class_name(yaml_key: str) -> str:
+                return globals()[yaml_key + "Config"]
+
             model_cls = get_config_class_name(key)
             if model_cls is None:
                 raise ValueError(f"Unknown extension key: {key}")

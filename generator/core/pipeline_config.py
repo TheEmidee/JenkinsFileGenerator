@@ -1,3 +1,6 @@
+"""Configuration for the Jenkins pipeline generator.
+This module defines the structure and configuration for generating Jenkins pipelines."""
+
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field
 

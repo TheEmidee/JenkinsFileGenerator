@@ -1,3 +1,6 @@
+"""Dependency resolver for Jenkinsfile features.
+This module provides functionality to resolve dependencies between features"""
+
 from typing import List
 
 from generator.core.base_feature import BaseFeature

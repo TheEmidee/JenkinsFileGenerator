@@ -1,3 +1,6 @@
+"""Template context for Jenkinsfile generation.
+This module defines the context passed to template rendering functions."""
+
 from dataclasses import dataclass
 from typing import Any, Dict
 

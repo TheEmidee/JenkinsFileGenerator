@@ -1,8 +1,13 @@
+"""Base Validator Module
+This module defines the base validator class for validating configurations."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 import traceback
 from typing import List, Optional
+
+from colorama import Fore, Style, init
 
 from generator import logger
 
@@ -40,21 +45,24 @@ class ValidationMessage:
 
     @abstractmethod
     def get_context_output_name(self) -> str:
-        pass
+        """Return a string representation of the context for output"""
 
 
 class BaseValidator(ABC):
+    """Base class for validators"""
+
     def __init__(self):
         self.messages: List[ValidationMessage] = []
 
     def validate(self, print_summary: bool = True) -> bool:
+        """Validate the configuration and print the warnings and errors messages"""
         self.messages.clear()
 
         try:
             self._validate_internal()
         except Exception as e:
             self._add_message("error", f"Unexpected validation error: {str(e)}")
-            logger.error(f"Validation exception: {traceback.format_exc()}")
+            logger.error("Validation exception: %s", traceback.format_exc())
 
         if self.messages and print_summary:
             self.print_messages(show_info=True)
@@ -62,15 +70,16 @@ class BaseValidator(ABC):
 
         if self.has_errors():
             logger.error(
-                f"❌ {self._get_validation_identifier()} validation failed! Use --no-validation to skip (not recommended)"
+                "❌ %s validation failed! Use --no-validation to skip (not recommended)",
+                self._get_validation_identifier(),
             )
             return False
-        elif self.has_warnings():
+        if self.has_warnings():
             logger.warning(
-                f"⚠️ {self._get_validation_identifier()} has warnings but is valid"
+                "⚠️ %s has warnings but is valid", self._get_validation_identifier()
             )
         else:
-            logger.info(f"✅ {self._get_validation_identifier()} validation passed!")
+            logger.info("✅ %s validation passed!", self._get_validation_identifier())
 
         return True
 
@@ -83,7 +92,7 @@ class BaseValidator(ABC):
         pass
 
     def _get_file_path(self) -> Path:
-        return None
+        return Path()
 
     def _add_message(
         self,
@@ -122,8 +131,6 @@ class BaseValidator(ABC):
     def print_messages(self, show_info: bool = True):
         """Print all validation messages with colors"""
         try:
-            from colorama import Fore, Style, init
-
             init()  # Initialize colorama
 
             colors = {"error": Fore.RED, "warning": Fore.YELLOW, "info": Fore.BLUE}

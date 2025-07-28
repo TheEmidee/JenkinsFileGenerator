@@ -1,3 +1,5 @@
+"""This module defines the Properties feature for Jenkins pipelines."""
+
 from typing import Any, Dict, List
 from pydantic import BaseModel
 

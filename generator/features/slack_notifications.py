@@ -1,3 +1,8 @@
+"""This module defines the Slack notifications feature for Jenkins pipelines.
+It includes configurations for sending notifications to Slack channels or users"""
+
+import json
+
 from abc import ABC
 from enum import Enum
 from typing import Any, Dict, Optional
@@ -23,6 +28,8 @@ class SlackColor(str, Enum):
 
 
 class SlackNotificationMessageConfig(BaseModel, ABC):
+    """Base configuration for Slack notification messages."""
+
     enabled: Optional[bool] = Field(
         default=None, description="Whether this notification type is enabled."
     )
@@ -43,6 +50,8 @@ class SlackNotificationMessageConfig(BaseModel, ABC):
 
 
 class SlackNotificationSimpleMessageConfig(SlackNotificationMessageConfig):
+    """Configuration for simple text message notifications."""
+
     enabled: bool = Field(
         default=True, description="Whether to send a simple text message."
     )
@@ -50,6 +59,8 @@ class SlackNotificationSimpleMessageConfig(SlackNotificationMessageConfig):
 
 
 class SlackNotificationBlocksMessageConfig(SlackNotificationMessageConfig):
+    """Configuration for block message notifications."""
+
     enabled: bool = Field(
         default=False, description="Whether to send a blocks message."
     )
@@ -59,12 +70,11 @@ class SlackNotificationBlocksMessageConfig(SlackNotificationMessageConfig):
     @classmethod
     def validate_blocks_json(cls, v: str) -> str:
         """Ensure blocks is valid JSON."""
-        import json
 
         try:
             json.loads(v)
-        except json.JSONDecodeError:
-            raise ValueError("blocks must be valid JSON")
+        except json.JSONDecodeError as e:
+            raise ValueError("blocks must be valid JSON") from e
         return v
 
 
@@ -108,6 +118,8 @@ class EventDefaults:
 
 
 class SlackNotificationEventConfig(BaseModel, ABC):
+    """Base configuration for Slack notification events."""
+
     simple_message: SlackNotificationSimpleMessageConfig = Field(
         default_factory=SlackNotificationSimpleMessageConfig,
         description="Configuration for simple message notifications.",
@@ -265,6 +277,7 @@ class SlackNotificationsConfig(FeatureConfig):
         return self
 
     def model_post_init(self, __context):
+        """Post-initialization to set up accumulator values."""
         self._accumulator["generate_send_message"] = any(
             event.simple_message.enabled
             for event in [

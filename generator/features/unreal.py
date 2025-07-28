@@ -1,16 +1,44 @@
+"""This module defines the Unreal Engine feature for Jenkins pipelines.
+It includes configurations for building Unreal projects using Unreal Build Graph"""
+
 import importlib
 import json
 import os
 import sys
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field, ValidationInfo, model_validator
 from mako.template import Template
 
 from generator import logger
 from generator.core.base_feature import BaseFeature, FeatureConfig
 from generator.core.template_context import TemplateContext
 from generator.utils.graph import Graph
+
+TEMPLATE = """
+    def buildgraph_properties = "${ctx.inlined_properties}"
+
+    def buildgraph_job_groups = [
+% for platform_name,platform in ctx.platforms.items():
+    % for group_names in platform.parallel_groups:
+        [
+        % for group_name in group_names:
+            [
+                "${group_name}": [
+                    tasks: [ ${", ".join(f'"{node.name}"' for node in platform.groups[group_name].nodes)} ],
+                    platform: "${platform_name}"
+                ],
+            ],
+        % endfor
+        ],
+    % endfor
+% endfor
+    ]
+
+    buildgraph_job_groups.each { group ->
+        executeJobsInParallel(group, buildgraph_properties)
+    }
+"""
 
 
 class UnrealBuildGraphPostTasksConfig(BaseModel):
@@ -27,6 +55,8 @@ class UnrealBuildGraphPostTasksConfig(BaseModel):
 
 
 class UnrealBuildGraphConfig(BaseModel):
+    """Configuration for Unreal Build Graph tasks."""
+
     target: str = Field(description="The target to build with Build Graph.")
     node_name_filters: Optional[Dict[str, str]] = Field(
         default=None,
@@ -47,6 +77,8 @@ class UnrealBuildGraphConfig(BaseModel):
 
 
 class UnrealCleanupConfig(BaseModel):
+    """Configuration for cleanup tasks after the buildgraph tasks."""
+
     enabled: Optional[bool] = Field(
         default=True,
         description="If true, runs the cleanup tasks after the buildgraph.",
@@ -67,11 +99,13 @@ class UnrealProjectConfig(BaseModel):
         default_factory=lambda: None,
         description="Path to the PyScripts folder if it's not at the root of the uproject",
     )
-    # Done like this to make it optional in the config file but will try to be set to a relative path from the uproject_path
+    # Done like this to make it optional in the config file 
+    # but will try to be set to a relative path from the uproject_path
 
     @model_validator(mode="after")
     def validate_model(self, info: ValidationInfo) -> "UnrealProjectConfig":
-        """Validation of the project config model and try to resolve paths to the uproject file and pyscripts folder."""
+        """Validation of the project config model 
+        and try to resolve paths to the uproject file and pyscripts folder."""
         if not self.uproject_path.is_absolute():
             config_file_path = (
                 info.context.get("config_file_path") if info.context else None
@@ -82,7 +116,8 @@ class UnrealProjectConfig(BaseModel):
                 config_dir = Path(config_file_path).parent
                 self.uproject_path = (config_dir / self.uproject_path).resolve()
                 logger.debug(
-                    f"Resolved uproject_path relative to config file: {self.uproject_path}"
+                    "Resolved uproject_path relative to config file: %s",
+                    self.uproject_path,
                 )
             else:
                 return None
@@ -90,10 +125,10 @@ class UnrealProjectConfig(BaseModel):
         if not self.uproject_path.is_file():
             raise ValueError("uproject_path does not point to a valid file")
 
-        logger.info(f"Resolved uproject_path: {self.uproject_path}")
+        logger.info("Resolved uproject_path: %s", self.uproject_path)
 
         if self.pyscripts_folder is None:
-            logger.debug(f"pyscripts_folder is not set. Default to PyScripts")
+            logger.debug("pyscripts_folder is not set. Default to PyScripts")
             self.pyscripts_folder = Path("PyScripts")
 
         if not self.pyscripts_folder.is_absolute():
@@ -104,7 +139,8 @@ class UnrealProjectConfig(BaseModel):
                 )
 
             logger.debug(
-                f"pyscripts_path is a relative path, resolving against the uproject located at {uproject_path}"
+                "pyscripts_path is a relative path, resolving against the uproject located at %s",
+                uproject_path,
             )
 
             self.pyscripts_folder = uproject_path.parent / self.pyscripts_folder
@@ -112,7 +148,7 @@ class UnrealProjectConfig(BaseModel):
         if not self.pyscripts_folder.is_dir():
             raise ValueError(f"Pyscripts folder not found at {self.pyscripts_folder}.")
 
-        logger.info(f"Resolved pyscripts_folder: {self.pyscripts_folder}")
+        logger.info("Resolved pyscripts_folder: %s", self.pyscripts_folder)
         return self
 
 
@@ -173,7 +209,7 @@ class UnrealFeature(BaseFeature):
         output_folder = uepyscripts.project.root_folder.joinpath(
             uepyscripts.config["Jenkins"]["OutputFolder"]
         )
-        logger.info(f"Output folder : {output_folder}")
+        logger.info("Output folder : %s", output_folder)
         if not output_folder.exists():
             raise Exception("The folder where to output the jenkinsfile does not exist")
 
@@ -181,13 +217,15 @@ class UnrealFeature(BaseFeature):
             config.buildgraph.target, config.buildgraph.properties, extra_parameters
         )
 
-        def read_json(path: Path) -> str:
-            with open(path) as f:
+        def read_json(path: Path) -> Any:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
 
-        json_contents = read_json(export_path)
+        json_nodes = read_json(export_path)
 
         class BuildNode:
+            """Represents a node in the graph of tasks."""
+
             def __init__(self, json_node):
                 self.name = json_node["Name"]
                 self.depends_on: list[str] = []
@@ -197,6 +235,8 @@ class UnrealFeature(BaseFeature):
                     self.depends_on = depends_on.split(";")
 
         class BuildGroup:
+            """Represents a group of tasks in the build graph."""
+
             def __init__(self, json_node):
                 self.name = json_node["Name"]
                 self.nodes = []
@@ -204,6 +244,8 @@ class UnrealFeature(BaseFeature):
                     self.nodes.append(BuildNode(node))
 
         class BuildPlatform:
+            """Represents a list of groups for a given platform."""
+
             def __init__(self, name: str):
                 self.name = name
                 self.job_to_group: dict[str, str] = {}
@@ -211,6 +253,7 @@ class UnrealFeature(BaseFeature):
                 self.parallel_groups: list[list[str]] = []
 
             def parse_group(self, json_node):
+                """Parse a group from the JSON node to associate a node to a group."""
                 group = BuildGroup(json_node)
                 self.groups.update({group.name: group})
 
@@ -218,9 +261,10 @@ class UnrealFeature(BaseFeature):
                     self.job_to_group.update({node.name: group.name})
 
             def build_parallel_groups(self):
+                """Build a list of tasks that can be executed in parallel."""
                 g = Graph()
 
-                for group_name, group in self.groups.items():
+                for group in self.groups.values():
                     for node in group.nodes:
                         for dependency in node.depends_on:
                             required_group_name = self.job_to_group[dependency]
@@ -230,7 +274,11 @@ class UnrealFeature(BaseFeature):
                 self.parallel_groups = g.topological_sort_with_hierarchy()
 
         class BuildContext:
-            def __init__(self, json, buildgraph_properties: dict[str, str] = None):
+            """Context for rendering the build graph template."""
+
+            def __init__(
+                self, json_nodes: Any, buildgraph_properties: dict[str, str] = None
+            ):
                 self.inlined_properties: str = ""
                 self.platforms: dict[str, BuildPlatform] = {}
 
@@ -238,7 +286,7 @@ class UnrealFeature(BaseFeature):
                     for key, value in buildgraph_properties.items():
                         self.inlined_properties += f"-set:{key}={value} "
 
-                for group in json["Groups"]:
+                for group in json_nodes["Groups"]:
                     platform_name = group["Agent Types"][0]
 
                     build_platform: BuildPlatform = None
@@ -250,35 +298,10 @@ class UnrealFeature(BaseFeature):
 
                     build_platform.parse_group(group)
 
-                for name, platform in self.platforms.items():
+                for platform in self.platforms.values():
                     platform.build_parallel_groups()
 
-        TEMPLATE = """
-            def buildgraph_properties = "${ctx.inlined_properties}"
-
-            def buildgraph_job_groups = [
-        % for platform_name,platform in ctx.platforms.items():
-            % for group_names in platform.parallel_groups:
-                [
-                % for group_name in group_names:
-                    [
-                        "${group_name}": [
-                            tasks: [ ${", ".join(f'"{node.name}"' for node in platform.groups[group_name].nodes)} ],
-                            platform: "${platform_name}"
-                        ],
-                    ],
-                % endfor
-                ],
-            % endfor
-        % endfor
-            ]
-
-            buildgraph_job_groups.each { group ->
-                executeJobsInParallel(group, buildgraph_properties)
-            }
-        """
-
-        build_context = BuildContext(json_contents, config.buildgraph.properties)
+        build_context = BuildContext(json_nodes, config.buildgraph.properties)
 
         jobs_template = Template(TEMPLATE)
         return jobs_template.render(ctx=build_context)

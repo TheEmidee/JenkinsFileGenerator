@@ -1,6 +1,10 @@
+"""DocumentationGenerator class for generating markdown documentation from Pydantic models.
+This class is designed to create documentation for the Jenkins pipeline configuration"""
+
 import importlib
 import inspect
 import os
+import sys
 from pathlib import Path
 import pkgutil
 from typing import List, Union, get_args, get_origin
@@ -12,6 +16,8 @@ from generator.core.pipeline_config import PipelineConfig
 
 
 class DocumentationGenerator:
+    """Generates markdown documentation for the Jenkins pipeline configuration."""
+
     def __init__(self):
         package_path = Path(os.path.abspath("documentation"))
 
@@ -29,7 +35,7 @@ class DocumentationGenerator:
             self._generate_features_docs_pages()
             # markdown_docs += self._generate_features_config_docs()
         except Exception as e:
-            logger.error(f"Failed to generate documentation: {e}")
+            logger.error("Failed to generate documentation: %s", e)
             raise e
 
     def _generate_main_docs_page(self):
@@ -89,16 +95,16 @@ class DocumentationGenerator:
                 if args:
                     return f"List[{self._format_type_annotation(args[0])}]"
                 return "List"
-            elif origin is dict:
+            if origin is dict:
                 if len(args) >= 2:
                     return f"Dict[{self._format_type_annotation(args[0])}, {self._format_type_annotation(args[1])}]"
                 return "Dict"
-            elif origin is tuple:
+            if origin is tuple:
                 if args:
                     arg_strs = [self._format_type_annotation(arg) for arg in args]
                     return f"Tuple[{', '.join(arg_strs)}]"
                 return "Tuple"
-            elif origin is type(Union[str, int]):  # Union type
+            if origin is type(Union[str, int]):  # Union type
                 if len(args) == 2 and type(None) in args:
                     # This is Optional[T]
                     non_none_type = args[0] if args[1] is type(None) else args[1]
@@ -118,7 +124,7 @@ class DocumentationGenerator:
                 "Enum" in base.__name__ for base in type_annotation.__bases__
             ):
                 return f"Enum ({type_annotation.__name__})"
-        except Exception:
+        except (AttributeError, TypeError):
             pass
 
         # Fallback to string representation
@@ -205,7 +211,7 @@ class DocumentationGenerator:
             text += " ( "
 
             if field_name in required_fields:
-                text + " (Required)"
+                text += " (Required)"
 
             # Get improved type information
             field_type = self._get_field_type_description(
@@ -261,7 +267,7 @@ class DocumentationGenerator:
                             output_description=False,
                         )
                     )
-            except Exception:
+            except (AttributeError, TypeError):
                 pass
 
             docs.append("")
@@ -290,7 +296,6 @@ class DocumentationGenerator:
         Returns:
             List of discovered classes that inherit from the base class
         """
-        import sys
 
         discovered_classes = []
         package_path = os.path.abspath("generator/features")
@@ -320,19 +325,19 @@ class DocumentationGenerator:
                             module = importlib.import_module(full_modname)
 
                             # Inspect all classes in the module
-                            for name, obj in inspect.getmembers(
+                            for _, obj in inspect.getmembers(
                                 module, inspect.isclass
                             ):
                                 if self._is_subclass_of_base(obj, "FeatureConfig"):
                                     discovered_classes.append(obj)
 
-                        except Exception as e:
+                        except ImportError as e:
                             print(
                                 f"Warning: Could not import module {full_modname}: {e}"
                             )
                             continue
 
-                except Exception as e:
+                except ImportError as e:
                     print(
                         f"Package import failed: {e}, trying individual file imports..."
                     )
@@ -359,7 +364,7 @@ class DocumentationGenerator:
             for base in inspect.getmro(obj):
                 if base.__name__ == base_class_name:
                     return True
-        except Exception:
+        except (TypeError, AttributeError):
             # Handle any issues with MRO inspection
             pass
 
@@ -367,12 +372,13 @@ class DocumentationGenerator:
 
 
 def generate_documentation() -> int:
+    """Entry point for generating documentation."""
     try:
         logger.info("Generating documentation...")
         documentation_generator = DocumentationGenerator()
         documentation_generator.generate_documentation()
         logger.info("✅ Documentation generated successfully!")
         return 0
-    except Exception as e:
-        logger.error(f"Documentation generation failed: {e}")
+    except (OSError, RuntimeError) as e:
+        logger.error("Documentation generation failed: %s", e)
         return 1

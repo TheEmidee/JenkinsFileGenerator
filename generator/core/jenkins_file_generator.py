@@ -1,3 +1,5 @@
+"""The main entry point for generating a Jenkinsfile from a configuration file."""
+
 from typing import Any, Dict, List
 from mako.lookup import TemplateLookup
 
@@ -6,12 +8,12 @@ import yaml
 from generator import logger
 from generator.core import constants
 
-from .template_context import TemplateContext
-from .pipeline_config import PipelineConfig
-from .generated_blocks import GeneratedBlocks
-from .base_feature import BaseFeature
-from .dependency_resolver import DependencyResolver
-from .feature_registry import FeatureRegistry
+from generator.core.template_context import TemplateContext
+from generator.core.pipeline_config import PipelineConfig
+from generator.core.generated_blocks import GeneratedBlocks
+from generator.core.base_feature import BaseFeature
+from generator.core.dependency_resolver import DependencyResolver
+from generator.core.feature_registry import FeatureRegistry
 
 
 class JenkinsfileGenerator:
@@ -28,12 +30,15 @@ class JenkinsfileGenerator:
         config = self.load_config(config_path)
         selected_features = self.select_features(config)
         logger.info(
-            f"Selected {len(selected_features)} features: {[f.feature_name for f in selected_features]}"
+            "Selected %s features: %s",
+            len(selected_features),
+            [f.feature_name for f in selected_features],
         )
 
         ordered_features = DependencyResolver.resolve_dependencies(selected_features)
         logger.info(
-            f"Feature order (after dependency resolution): {[f.feature_name for f in ordered_features]}"
+            "Feature order (after dependency resolution): %s",
+            [f.feature_name for f in ordered_features],
         )
 
         all_blocks = GeneratedBlocks()
@@ -56,21 +61,21 @@ class JenkinsfileGenerator:
             except Exception as e:
                 raise RuntimeError(
                     f"Failed to process feature '{feature.feature_name}': {e}"
-                )
+                ) from e
 
         self.render_final_jenkinsfile(all_blocks, config, global_values, output_path)
 
     def load_config(self, config_path: str) -> PipelineConfig:
         """Load and parse YAML configuration file."""
         try:
-            with open(config_path, "r") as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 yaml_contents = yaml.safe_load(f)
                 validation_context = {"config_file_path": config_path}
                 return PipelineConfig.model_validate(
                     yaml_contents, context=validation_context
                 )
         except Exception as e:
-            raise ValueError(f"Failed to load config file '{config_path}': {e}")
+            raise ValueError(f"Failed to load config file '{config_path}': {e}") from e
 
     def select_features(self, config: PipelineConfig) -> List[BaseFeature]:
         """Select and instantiate features based on configuration."""
@@ -98,7 +103,7 @@ class JenkinsfileGenerator:
         except Exception as e:
             raise FileNotFoundError(
                 f"Base template not found: {self.base_template_path}"
-            )
+            ) from e
 
         try:
             d = {k: "\n".join(v or []) for k, v in blocks.blocks.items()}
@@ -114,7 +119,7 @@ class JenkinsfileGenerator:
             )
 
         except Exception as e:
-            raise RuntimeError(f"Failed to render base template: {e}")
+            raise RuntimeError(f"Failed to render base template: {e}") from e
 
         with open(output_path, "wb") as f:
             f.write(rendered)

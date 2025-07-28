@@ -1,4 +1,7 @@
+"""Utility functions for Groovy code generation."""
+
 def write_groovy_repr(context, val):
+    """Writes a Groovy representation of the given value to the context."""
     if isinstance(val, bool):
         context.write("true" if val else "false")
     elif val is None:
@@ -38,13 +41,3 @@ def add_comments(text: str) -> str:
     lines = text.split("\n")
     commented_lines = ["//" + line for line in lines]
     return "\n".join(commented_lines)
-
-
-def stubify(context, command: str, print_message: str):
-    context.write(
-        f"print( '{print_message}' )\n{add_comments(command)}"
-        if command
-        else "//" + print_message
-    )
-
-    return ""

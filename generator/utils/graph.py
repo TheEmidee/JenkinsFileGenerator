@@ -1,17 +1,23 @@
+"""Graph utility for managing dependencies and performing topological sorting."""
+
 from collections import defaultdict, deque
 
 
 class Graph:
+    """A simple directed graph implementation for topological sorting."""
+
     def __init__(self):
         self.graph = defaultdict(list)
         self.nodes = set()
 
     def add_edge(self, u, v):
+        """Add a directed edge from node u to node v."""
         self.graph[u].append(v)
         self.nodes.add(u)
         self.nodes.add(v)
 
     def calculate_in_degree(self) -> dict[str, int]:
+        """Calculate in-degree for each node in the graph."""
         in_degree = {node: 0 for node in self.nodes}
         for node in self.graph:
             for neighbor in self.graph[node]:
@@ -19,6 +25,7 @@ class Graph:
         return in_degree
 
     def get_nodes_with_no_dependencies(self) -> list[str]:
+        """Get nodes that have no incoming edges (dependencies)."""
         keys = set(self.graph.keys())
         values = [item for sublist in self.graph.values() for item in sublist]
         items_in_values_not_in_keys = set(values) - keys
