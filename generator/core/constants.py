@@ -1,3 +1,5 @@
+"""Constants for the Jenkinsfile generator."""
+
 import os
 
 from pathlib import Path

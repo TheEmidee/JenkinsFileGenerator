@@ -1,33 +1,37 @@
+"""Graph utility for managing dependencies and performing topological sorting."""
+
 from collections import defaultdict, deque
 
+
 class Graph:
+    """A simple directed graph implementation for topological sorting."""
+
     def __init__(self):
         self.graph = defaultdict(list)
         self.nodes = set()
 
     def add_edge(self, u, v):
+        """Add a directed edge from node u to node v."""
         self.graph[u].append(v)
         self.nodes.add(u)
         self.nodes.add(v)
 
-    def calculate_in_degree(self) -> dict[str,int]:
+    def calculate_in_degree(self) -> dict[str, int]:
+        """Calculate in-degree for each node in the graph."""
         in_degree = {node: 0 for node in self.nodes}
         for node in self.graph:
             for neighbor in self.graph[node]:
                 in_degree[neighbor] += 1
         return in_degree
-    
-    def get_nodes_with_no_dependencies(
-        self
-    ) -> list[str]:
+
+    def get_nodes_with_no_dependencies(self) -> list[str]:
+        """Get nodes that have no incoming edges (dependencies)."""
         keys = set(self.graph.keys())
         values = [item for sublist in self.graph.values() for item in sublist]
         items_in_values_not_in_keys = set(values) - keys
         return list(items_in_values_not_in_keys)
 
-    def topological_sort_with_hierarchy(
-        self
-    ) -> list[list[str]]:
+    def topological_sort_with_hierarchy(self) -> list[list[str]]:
         """Perform a topological sort and return nodes grouped by hierarchy.
         This is a different implementation than the standard because we extract all the
         tasks that have no dependency, create a separate list with them, to add them first
@@ -40,8 +44,14 @@ class Graph:
         in_degree = self.calculate_in_degree()
 
         # Then remove the nodes and their degrees if they don't have any dependency
-        self.nodes = [item for item in self.nodes if item not in nodes_with_no_dependencies]
-        in_degree = {key: value for key, value in in_degree.items() if key not in nodes_with_no_dependencies}
+        self.nodes = [
+            item for item in self.nodes if item not in nodes_with_no_dependencies
+        ]
+        in_degree = {
+            key: value
+            for key, value in in_degree.items()
+            if key not in nodes_with_no_dependencies
+        }
 
         queue = deque([node for node in in_degree if in_degree[node] == 0])
         sorted_hierarchy = []
