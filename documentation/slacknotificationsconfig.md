@@ -1,11 +1,13 @@
 # SlackNotificationsConfig
 
 ```
-Configuration for Slack notifications.
+This module defines the Slack notifications feature for Jenkins pipelines.
+It includes configurations for sending notifications to Slack channels or users
+The notifications can be simple text messages or rich block messages.
 ```
-  * **channel**: The Slack channel or user to send notifications to. Must start with # for channels or @ for users. (  Type: `str` )
+  * **channel**: The Slack channel or user to send notifications to. Must start with # for channels or @ for users. (  (Required) Type: `str` )
 
-  * **message_template**: Template for the message to be sent. Can include variables like env.BUILD_URL, env.JOB_NAME, etc. (  Type: `str` )
+  * **message_template**: Template for the message to be sent. Can include variables like env.BUILD_URL, env.JOB_NAME, etc. (  (Required) Type: `str` )
 
   * **pre_build_step**: Configuration for the notifications sent during the pre-build step phase. (  Type: `SlackNotificationPreBuildStepEventConfig` )
     * **simple_message**: Configuration for simple message notifications. (  Type: `SlackNotificationSimpleMessageConfig` )

@@ -1,4 +1,9 @@
-"""This module defines the Properties feature for Jenkins pipelines."""
+"""
+This module defines the Properties feature for Jenkins pipelines.
+You must type the properties exactly as you would in a Jenkinsfile.
+For example:
+buildDiscarder( logRotator( numToKeepStr: '10' ) )
+"""
 
 from typing import Any, Dict, List
 from pydantic import BaseModel
@@ -7,11 +12,7 @@ from generator.core.base_feature import BaseFeature, FeatureConfig
 
 
 class PropertiesConfig(FeatureConfig):
-    """Configuration for the pipeline properties.
-    You must type the properties exactly as you would in a Jenkinsfile.
-    For example:
-    buildDiscarder( logRotator( numToKeepStr: '10' ) )
-    """
+    """Configuration for the pipeline properties."""
 
     items: List[str] = None
 

@@ -67,7 +67,6 @@ Examples:
         action="store_true",
         help="Skip configuration validation (not recommended)",
     )
-
     parser.add_argument(
         "-v",
         "--verbose",
