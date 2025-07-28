@@ -33,50 +33,41 @@ class UnrealProjectConfig(BaseModel):
     uproject_path: Path = Field(description="The path to the .uproject file of the Unreal project.")
     pyscripts_folder: Path = Field(default_factory=lambda: None, description="Path to the PyScripts folder if it's not at the root of the uproject") 
     # Done like this to make it optional in the config file but will try to be set to a relative path from the uproject_path
-
-    @field_validator('uproject_path')
-    @classmethod
-    def validate_uproject_path(cls, uproject_path : Path, info: ValidationInfo) -> Path:
-        """Validate the uproject file exists."""
-        if not uproject_path.is_absolute():
+    
+    @model_validator(mode='after')
+    def validate_model(self, info: ValidationInfo) -> 'UnrealProjectConfig':
+        """Validation of the project config model and try to resolve paths to the uproject file and pyscripts folder."""
+        if not self.uproject_path.is_absolute():
             config_file_path = info.context.get('config_file_path') if info.context else None
 
             if config_file_path:
                 # Resolve relative to config file directory
                 config_dir = Path(config_file_path).parent
-                uproject_path = (config_dir / uproject_path).resolve()
-                logger.debug(f"Resolved uproject_path relative to config file: {uproject_path}")
+                self.uproject_path = (config_dir / self.uproject_path).resolve()
+                logger.debug(f"Resolved uproject_path relative to config file: {self.uproject_path}")
             else:
-                # Fallback to current working directory
                 return None
-                # uproject_path = None uproject_path.resolve()
-                # logger.warning(f"No config file path in context, resolving relative to CWD: {uproject_path}")
 
-        if not uproject_path.is_file():
+        if not self.uproject_path.is_file():
             raise ValueError('uproject_path does not point to a valid file')
         
-        logger.info(f"Resolved uproject_path: {uproject_path}")
+        logger.info(f"Resolved uproject_path: {self.uproject_path}")
 
-        return uproject_path
-    
-    @model_validator(mode='after')
-    def validate_model(self) -> 'UnrealProjectConfig':
-        """Validate the location of the UEPyscripts package."""
         if self.pyscripts_folder is None:
             logger.debug(f"pyscripts_folder is not set. Default to PyScripts")
             self.pyscripts_folder = Path("PyScripts")
 
-        # if not self.pyscripts_folder.is_absolute():
-        #     uproject_path = self.uproject_path
-        #     if uproject_path is None:
-        #         raise ValueError("uproject_path must be validated before pyscripts_folder")
+        if not self.pyscripts_folder.is_absolute():
+            uproject_path = self.uproject_path
+            if uproject_path is None:
+                raise ValueError("uproject_path must be validated before pyscripts_folder")
 
-        #     logger.debug(f"pyscripts_path is a relative path, resolving against the uproject located at {uproject_path}")
+            logger.debug(f"pyscripts_path is a relative path, resolving against the uproject located at {uproject_path}")
 
-        #     self.pyscripts_folder = uproject_path.parent / self.pyscripts_folder
+            self.pyscripts_folder = uproject_path.parent / self.pyscripts_folder
 
-        # if not self.pyscripts_folder.is_dir():
-        #     raise ValueError(f"Pyscripts folder not found at {self.pyscripts_folder}.")
+        if not self.pyscripts_folder.is_dir():
+            raise ValueError(f"Pyscripts folder not found at {self.pyscripts_folder}.")
 
         logger.info(f"Resolved pyscripts_folder: {self.pyscripts_folder}")
         return self
