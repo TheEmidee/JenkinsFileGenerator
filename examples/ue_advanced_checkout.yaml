@@ -1,0 +1,51 @@
+pipeline_name: "test"
+project:
+  name: "project"
+jenkins:
+  default_node_names: "UE_5.5"
+  workspace_suffix: "UE_5.5"
+features:
+  utils:
+    abort_running_builds: true
+  properties:
+    items:
+      - "buildDiscarder( logRotator( numToKeepStr: '10' ) )"
+  slack_notifications:
+    channel: "#p-project-ci"
+    message_template: " : ${env.JOB_NAME} - ${env.CHANGE_BRANCH} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+  git:
+    use_simple_checkout: false
+    checkout:
+      branch_name: "develop"
+      extensions:
+        CheckoutOption:
+          timeout: 120
+        SubmoduleOption:
+          disableSubmodules: false
+          parentCredentials: true
+          recursiveSubmodules: true
+          reference: ""
+          timeout: 120
+          trackingSubmodules: false
+        GitLFSPull:
+          enabled: true
+      user_remote_config:
+        credentials_id:
+          id: "Id"
+          url: "git@github.com:GitHub/octocat.git"
+  unreal:
+    project:
+      uproject_path: "../../MyGame.uproject"
+    buildgraph:
+      target: "BuildAndTest MyGame"
+      node_name_filters:
+        "MyGame Editor Win64 Test=BootTest": "!NoGPU"
+      properties:
+        Skip_Test_EditorBoot: "False"
+        Skip_Test_TargetBoot: "False"
+      post_tasks:
+        enabled: true
+        archive_artifacts: true
+    cleanup_after_build:
+      enabled: true
+      additional_node_name: "Win64"
