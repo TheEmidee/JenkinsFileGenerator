@@ -136,7 +136,7 @@ Each feature has an associated Mako template in `generator/templates/` that defi
 ```mako
 <!-- git.mako -->
 <%def name="additional_functions()">
-def gitCheckout() {
+def checkout() {
     % if feature_config.use_simple_checkout:
         checkout scm
     % else:

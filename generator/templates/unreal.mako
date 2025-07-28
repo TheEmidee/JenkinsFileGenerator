@@ -58,7 +58,7 @@ def runBuildGraph( groupName, taskNames, platform, properties ) {
         
         ${utils.get_workspace()}
         {
-            gitCheckout()
+            checkout()
 
             taskNames.each { String taskName ->
                 stage( taskName ) {
@@ -113,7 +113,7 @@ def cleanup() {
 
         ${utils.get_workspace()} 
         {
-            gitCheckout()
+            checkout()
 
             stage ( "Cleanup" ) {
                 <%text>

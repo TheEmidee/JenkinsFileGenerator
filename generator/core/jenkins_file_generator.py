@@ -39,7 +39,8 @@ class JenkinsfileGenerator:
 
         for feature in ordered_features:
             try:
-                feature_config = feature.get_feature_config(config)
+                validation_context = {'config_file_path': config_path}            
+                feature_config = feature.get_feature_config(config, validation_context)
                 context = TemplateContext(
                     full_config=config,
                     feature_config=feature_config,
@@ -60,7 +61,8 @@ class JenkinsfileGenerator:
         try:
             with open(config_path, 'r') as f:
                 yaml_contents = yaml.safe_load(f)
-                return PipelineConfig(**yaml_contents)
+                validation_context = {'config_file_path': config_path}
+                return PipelineConfig.model_validate(yaml_contents, context=validation_context)
         except Exception as e:
             raise ValueError(f"Failed to load config file '{config_path}': {e}")
 

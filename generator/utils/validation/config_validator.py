@@ -147,7 +147,8 @@ class ConfigValidator(BaseValidator):
         try:
             with open(self.config_path, 'r') as f:
                 yaml_contents = yaml.safe_load(f)
-                validated_config = PipelineConfig(**yaml_contents)
+                validation_context = {'config_file_path': self.config_path}
+                validated_config = PipelineConfig(**yaml_contents, context=validation_context)
                 self.validated_config = validated_config                
             
         except ValidationError as e:
@@ -201,7 +202,8 @@ class ConfigValidator(BaseValidator):
             try:
                 feature_class = available_features[feature_name]
                 feature_instance = feature_class()
-                feature_instance.get_feature_config(self.validated_config)
+                validation_context = {'config_file_path': self.config_path}
+                feature_instance.get_feature_config(self.validated_config, validation_context)
                 
             except ValidationError as e:
                 for error in e.errors():
