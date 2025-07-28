@@ -202,7 +202,7 @@ class TemplateValidator(BaseValidator):
         feature_registry = FeatureRegistry()
         available_features = feature_registry.get_all_features()
 
-        for feature_name in available_features.keys():
+        for feature_name, _ in available_features.items():
             template_path = self.templates_dir / f"{feature_name}.mako"
             if not template_path.exists():
                 self._add_message(

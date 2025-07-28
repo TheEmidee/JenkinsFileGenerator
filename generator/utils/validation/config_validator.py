@@ -74,7 +74,7 @@ class ConfigValidator(BaseValidator):
     """Enhanced configuration validator with detailed error reporting"""
 
     def __init__(self, config_path: Path):
-        super(ConfigValidator, self).__init__()
+        super().__init__()
         self.config_path: Path = config_path
         self.raw_config: Optional[LineTrackingDict] = None
         self.validated_config: Optional[PipelineConfig] = None
@@ -286,7 +286,7 @@ class ConfigValidator(BaseValidator):
         if error_type == "missing":
             if "channel" in field_path:
                 return 'Add a channel field like: channel: "#ci-builds"'
-            elif "name" in field_path:
+            if "name" in field_path:
                 return "Add a name field with your project name"
 
         if error_type == "bool_parsing":

@@ -154,7 +154,7 @@ class BaseValidator(ABC):
 
         if error_count == 0 and warning_count == 0:
             return f"✅ {self._get_validation_identifier()} is valid! ({info_count} info messages)"
-        elif error_count == 0:
+        if error_count == 0:
             return f"⚠️ {self._get_validation_identifier()} is valid with {warning_count} warnings ({info_count} info messages)"
-        else:
-            return f"❌ {self._get_validation_identifier()} has {error_count} errors and {warning_count} warnings"
+
+        return f"❌ {self._get_validation_identifier()} has {error_count} errors and {warning_count} warnings"

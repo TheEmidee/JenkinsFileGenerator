@@ -109,10 +109,10 @@ class DocumentationGenerator:
                     # This is Optional[T]
                     non_none_type = args[0] if args[1] is type(None) else args[1]
                     return f"Optional[{self._format_type_annotation(non_none_type)}]"
-                else:
-                    # Regular Union
-                    arg_strs = [self._format_type_annotation(arg) for arg in args]
-                    return f"Union[{', '.join(arg_strs)}]"
+
+                # Regular Union
+                arg_strs = [self._format_type_annotation(arg) for arg in args]
+                return f"Union[{', '.join(arg_strs)}]"
 
         # Handle Pydantic models
         if inspect.isclass(type_annotation) and issubclass(type_annotation, BaseModel):
@@ -137,17 +137,17 @@ class DocumentationGenerator:
         """Extract type information from JSON schema field info."""
         if "enum" in field_info:
             return f"enum: {', '.join(map(str, field_info['enum']))}"
-        elif "$ref" in field_info:
+        if "$ref" in field_info:
             return field_info["$ref"].split("/")[-1]
-        elif "type" in field_info:
+        if "type" in field_info:
             schema_type = field_info["type"]
             if schema_type == "array" and "items" in field_info:
                 items_type = self._get_type_from_schema(field_info["items"])
                 return f"List[{items_type}]"
-            elif schema_type == "object":
+            if schema_type == "object":
                 return "Dict"
             return schema_type
-        elif "anyOf" in field_info:
+        if "anyOf" in field_info:
             # Handle Optional types and unions
             types = []
             has_null = False
@@ -159,10 +159,10 @@ class DocumentationGenerator:
 
             if has_null and len(types) == 1:
                 return f"Optional[{types[0]}]"
-            elif has_null:
+            if has_null:
                 return f"Union[{', '.join(types + ['None'])}]"
-            else:
-                return f"Union[{', '.join(types)}]"
+
+            return f"Union[{', '.join(types)}]"
 
         return "unknown"
 
@@ -325,9 +325,7 @@ class DocumentationGenerator:
                             module = importlib.import_module(full_modname)
 
                             # Inspect all classes in the module
-                            for _, obj in inspect.getmembers(
-                                module, inspect.isclass
-                            ):
+                            for _, obj in inspect.getmembers(module, inspect.isclass):
                                 if self._is_subclass_of_base(obj, "FeatureConfig"):
                                     discovered_classes.append(obj)
 

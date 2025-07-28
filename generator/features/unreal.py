@@ -99,7 +99,7 @@ class UnrealProjectConfig(BaseModel):
         default_factory=lambda: None,
         description="Path to the PyScripts folder if it's not at the root of the uproject",
     )
-    # Done like this to make it optional in the config file 
+    # Done like this to make it optional in the config file
     # but will try to be set to a relative path from the uproject_path
 
     @model_validator(mode="after")
