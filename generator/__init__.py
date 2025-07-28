@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+"""This module initializes the Jenkinsfile generator package."""
 import logging
 
 logger = logging.getLogger("jenkinsfile_generator")

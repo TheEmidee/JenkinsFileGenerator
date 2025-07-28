@@ -1,8 +1,1 @@
-__all__ = [
-    "git",
-    "github",
-    "properties",
-    "slack_notifications",
-    "unreal",
-    "utils"
-    ]
+__all__ = ["git", "github", "properties", "slack_notifications", "unreal", "utils"]
