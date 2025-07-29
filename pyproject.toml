@@ -1,0 +1,55 @@
+[project]
+name = "JenkinsfileGenerator"
+description = "Module that generates Jenkins pipeline files from YAML configuration files using a modular feature-based approach"
+readme.content-type = "text/markdown"
+readme.file = "README.md"
+keywords = [
+  "jenkinsfile",
+  "unreal engine",
+  "unity"
+]
+license = "MIT"
+maintainers = [
+  { name = "Michael Delva", email = "michael@emidee.net" },
+]
+authors = [
+  { name = "Michael Delva", email = "michael@emidee.net" },
+]
+requires-python = ">=3.9"
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Software Development :: Testing",
+  "Topic :: Utilities",
+]
+dynamic = [
+  "version",
+]
+dependencies = [
+  "annotated-types==0.7.0",
+  "colorama==0.4.6",
+  "Mako==1.3.9",
+  "MarkupSafe==3.0.2",
+  "packaging==24.2",
+  "psutil==6.1.1",
+  "pydantic==2.11.7",
+  "pydantic_core==2.33.2",
+  "PyYAML==6.0.2",
+  "typing-inspection==0.4.1",
+  "typing_extensions==4.14.0"
+]
+urls.Changelog = "https://github.com/TheEmidee/JenkinsfileGenerator/releases"
+urls.Homepage = "https://github.com/TheEmidee/JenkinsFileGenerator"
+urls.Source = "https://github.com/TheEmidee/JenkinsfileGenerator"
+urls.Tracker = "https://github.com/TheEmidee/JenkinsfileGenerator/issues"

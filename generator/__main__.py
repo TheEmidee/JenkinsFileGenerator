@@ -3,6 +3,7 @@
 
 import argparse
 import logging
+import argparse
 import traceback
 
 from pathlib import Path
@@ -67,6 +68,7 @@ Examples:
         action="store_true",
         help="Skip configuration validation (not recommended)",
     )
+
     parser.add_argument(
         "-v",
         "--verbose",
