@@ -45,7 +45,7 @@ python -m generator <config_file> [options]
 | `config`                   | Path | Yes      | Path to the YAML configuration file                |
 | `-o, --output`             | Path | No       | Output path for the generated Jenkinsfile          |
 | `--lint`                   | Flag | No       | Run npm-groovy-lint on the generated file          |
-| `--generate-documentation` | Flag | No       | Generate configuration documentation               |
+| `--generate-documentation` | Flag | No       | Generates the configuration documentation          |
 | `--validate`               | Flag | No       | Validates the config file and the mako templates   |
 | `--list_features`          | Flag | No       | Output the registered features in the console      |
 | `--no-validation`          | Flag | No       | Skip configuration validation (not recommended)    |
@@ -69,7 +69,7 @@ python -m generator config.yaml --generate_documentation
 
 ### VS Code
 
-In the `launch.json` file of the `.vscode` folder, add this code:
+In the `launch.json` file of the `.vscode` folder, add the following lines:
 
 ```
 {
@@ -106,7 +106,7 @@ features:
   # Feature configurations go here
 ```
 
-See the [examples/](examples)` directory for configuration examples.
+See the [examples](examples) directory for configuration examples.
 
 ### Available Features
 
@@ -117,7 +117,7 @@ See the [examples/](examples)` directory for configuration examples.
 - **`slack_notifications`**: Slack messaging for build events
 - **`unreal`**: Unreal Engine BuildGraph integration
 
-You can also see the features [documentation](documentation/index.md).
+You can also look at the [documentation](documentation/index.md) for the features.
 
 ## How the Feature System Works
 

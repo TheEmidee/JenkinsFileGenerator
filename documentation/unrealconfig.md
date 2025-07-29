@@ -2,7 +2,7 @@
 
 ```
 This feature works by using Buildgraph in an Unreal Engine project.
-It requires that you also use [PyScripts](https://github.com/TheEmidee/UEPyScripts), which can be inside your game project or in a separate folder.
+It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts, which can be inside your game project or in a separate folder.
 
 In a nutshell, this is how this feature works:
 1. Before generating any text to output in the Jenkinsfile, this feature will run the module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties, as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
@@ -20,7 +20,7 @@ And this is how the tasks are executed by Jenkins:
 * -SingleNode="task_name"
 Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument, and will write the results to the shared storage directory.
 4. If later down the pipeline a task needs to read the results of a previous task, it will read them from the shared storage directory.
-5. The shared storage directory is cleaned up at the end of the pipeline to avoid cluttering the disk with old results, and to make sure that there are no artifacts left from previous jobs.
+5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering the disk with old results, and to make sure that there are no artifacts left from previous jobs.
 ```
   * **project**: The Unreal project configuration. (  (Required) Type: `UnrealProjectConfig` )
     * **uproject_path**: The path to the .uproject file of the Unreal project. (  (Required) Type: `<class 'pathlib.Path'>` )
