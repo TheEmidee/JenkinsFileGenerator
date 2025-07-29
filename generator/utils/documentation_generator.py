@@ -184,9 +184,18 @@ class DocumentationGenerator:
             prefix = "* " if level > 0 else "# "
             docs.append(f"{'  ' * level}{prefix}{title}\n")
 
-            if "description" in schema:
+            module_docstring = None
+            if hasattr(model_class, '__module__'):
+                try:
+                    module = sys.modules[model_class.__module__]
+                    module_docstring = module.__doc__
+                except (KeyError, AttributeError):
+                    pass
+
+            if module_docstring:
                 prefix = "\t" if level > 0 else ""
-                description = schema["description"]
+                # Clean up the docstring (remove leading/trailing whitespace)
+                description = module_docstring.strip()
 
                 if level == 0:
                     docs.append("```")
@@ -198,6 +207,21 @@ class DocumentationGenerator:
 
                 if level == 0:
                     docs.append("```")
+
+            # if "description" in schema:
+            #     prefix = "\t" if level > 0 else ""
+            #     description = schema["description"]
+
+            #     if level == 0:
+            #         docs.append("```")
+
+            #     processed_lines = [
+            #         f"{'  ' * level}{prefix}{line}" for line in description.split("\n")
+            #     ]
+            #     docs.append("\n".join(processed_lines))
+
+            #     if level == 0:
+            #         docs.append("```")
 
         properties = schema.get("properties", {})
         required_fields = set(schema.get("required", []))

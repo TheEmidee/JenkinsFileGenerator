@@ -1,5 +1,8 @@
-"""This module defines the Slack notifications feature for Jenkins pipelines.
-It includes configurations for sending notifications to Slack channels or users"""
+"""
+This module defines the Slack notifications feature for Jenkins pipelines.
+It includes configurations for sending notifications to Slack channels or users
+The notifications can be simple text messages or rich block messages.
+"""
 
 import json
 

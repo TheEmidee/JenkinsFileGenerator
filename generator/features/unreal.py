@@ -1,5 +1,24 @@
-"""This module defines the Unreal Engine feature for Jenkins pipelines.
-It includes configurations for building Unreal projects using Unreal Build Graph"""
+"""This feature works by using Buildgraph in an Unreal Engine project.
+It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts, which can be inside your game project or in a separate folder.
+
+In a nutshell, this is how this feature works:
+1. Before generating any text to output in the Jenkinsfile, this feature will run the module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties, as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
+2. We then read the JSON file and create a graph of tasks.
+3. We use a topological sorting algorithm to group the tasks that can be executed in parallel, respecting the dependencies.
+4. Finally, we output in the jenkinsfile an array of those tasks, and the associated functions to execute those tasks in parallel.
+
+And this is how the tasks are executed by Jenkins:
+1. Each group of tasks is passed to the generated additional function `executeJobsInParallel`, which will call the function `runBuildGraph` for each task.
+2. This function uses the module `uepyscripts.tools.ci.buildgraph` from PyScripts. This module is a wrapper around the regular uepyscripts.run.buildgraph module.
+3. This module will execute BuildGraph with the target and properties, as expected, but will pass 4 extra arguments:
+* -BuildMachine
+* -SharedStorageDir="\\\\path\\to\\shared\\dir'
+* -WriteToSharedStorage,
+* -SingleNode="task_name"
+Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument, and will write the results to the shared storage directory.
+4. If later down the pipeline a task needs to read the results of a previous task, it will read them from the shared storage directory.
+5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering the disk with old results, and to make sure that there are no artifacts left from previous jobs.
+"""
 
 import importlib
 import json
@@ -104,7 +123,7 @@ class UnrealProjectConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_model(self, info: ValidationInfo) -> "UnrealProjectConfig":
-        """Validation of the project config model 
+        """Validation of the project config model
         and try to resolve paths to the uproject file and pyscripts folder."""
         if not self.uproject_path.is_absolute():
             config_file_path = (
@@ -211,7 +230,9 @@ class UnrealFeature(BaseFeature):
         )
         logger.info("Output folder : %s", output_folder)
         if not output_folder.exists():
-            raise Exception("The folder where to output the jenkinsfile does not exist")
+            raise FileNotFoundError(
+                "The folder where to output the jenkinsfile does not exist"
+            )
 
         uepyscripts.run(
             config.buildgraph.target, config.buildgraph.properties, extra_parameters

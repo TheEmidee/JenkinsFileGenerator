@@ -1,5 +1,6 @@
 """Configuration for the Jenkins pipeline generator.
-This module defines the structure and configuration for generating Jenkins pipelines."""
+This is what should be at the top of the config file.
+It defines all the general settings, such as the project configuration, the global jenkins configuration, and the features to be used in the pipeline."""
 
 from typing import Any, Dict, Optional
 from pydantic import BaseModel, Field

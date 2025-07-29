@@ -1,16 +1,35 @@
 # UnrealConfig
 
 ```
-Configuration model for the unreal feature.
+This feature works by using Buildgraph in an Unreal Engine project.
+It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts, which can be inside your game project or in a separate folder.
+
+In a nutshell, this is how this feature works:
+1. Before generating any text to output in the Jenkinsfile, this feature will run the module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties, as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
+2. We then read the JSON file and create a graph of tasks.
+3. We use a topological sorting algorithm to group the tasks that can be executed in parallel, respecting the dependencies.
+4. Finally, we output in the jenkinsfile an array of those tasks, and the associated functions to execute those tasks in parallel.
+
+And this is how the tasks are executed by Jenkins:
+1. Each group of tasks is passed to the generated additional function `executeJobsInParallel`, which will call the function `runBuildGraph` for each task.
+2. This function uses the module `uepyscripts.tools.ci.buildgraph` from PyScripts. This module is a wrapper around the regular uepyscripts.run.buildgraph module.
+3. This module will execute BuildGraph with the target and properties, as expected, but will pass 4 extra arguments:
+* -BuildMachine
+* -SharedStorageDir="\\path\to\shared\dir'
+* -WriteToSharedStorage,
+* -SingleNode="task_name"
+Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument, and will write the results to the shared storage directory.
+4. If later down the pipeline a task needs to read the results of a previous task, it will read them from the shared storage directory.
+5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering the disk with old results, and to make sure that there are no artifacts left from previous jobs.
 ```
-  * **project**: The Unreal project configuration. (  Type: `UnrealProjectConfig` )
-    * **uproject_path**: The path to the .uproject file of the Unreal project. (  Type: `<class 'pathlib.Path'>` )
+  * **project**: The Unreal project configuration. (  (Required) Type: `UnrealProjectConfig` )
+    * **uproject_path**: The path to the .uproject file of the Unreal project. (  (Required) Type: `<class 'pathlib.Path'>` )
 
     * **pyscripts_folder**: Path to the PyScripts folder if it's not at the root of the uproject (  Type: `<class 'pathlib.Path'>` )
 
 
-  * **buildgraph**: The buildgraph configuration. (  Type: `UnrealBuildGraphConfig` )
-    * **target**: The target to build with Build Graph. (  Type: `str` )
+  * **buildgraph**: The buildgraph configuration. (  (Required) Type: `UnrealBuildGraphConfig` )
+    * **target**: The target to build with Build Graph. (  (Required) Type: `str` )
 
     * **node_name_filters**: Filters to apply to the node names. Keys are the buildgraph task names and values are the jenkins node filter (Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine without a GPU to run the BootTest task). (  Type: `Optional[Dict[str, str]]` Default: `None` )
 

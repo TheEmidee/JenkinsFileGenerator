@@ -1,7 +1,7 @@
 # PropertiesConfig
 
 ```
-Configuration for the pipeline properties.
+This module defines the Properties feature for Jenkins pipelines.
 You must type the properties exactly as you would in a Jenkinsfile.
 For example:
 buildDiscarder( logRotator( numToKeepStr: '10' ) )

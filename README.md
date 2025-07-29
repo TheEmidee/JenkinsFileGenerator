@@ -45,9 +45,12 @@ python -m generator <config_file> [options]
 | `config`                   | Path | Yes      | Path to the YAML configuration file                |
 | `-o, --output`             | Path | No       | Output path for the generated Jenkinsfile          |
 | `--lint`                   | Flag | No       | Run npm-groovy-lint on the generated file          |
-| `--generate_documentation` | Flag | No       | Generate configuration documentation               |
+| `--generate-documentation` | Flag | No       | Generates the configuration documentation          |
 | `--validate`               | Flag | No       | Validates the config file and the mako templates   |
 | `--list_features`          | Flag | No       | Output the registered features in the console      |
+| `--no-validation`          | Flag | No       | Skip configuration validation (not recommended)    |
+| `--verbose`                | Flag | No       | Show detailed messages                             |
+| `--quiet`                  | Flag | No       | Suppress non-error output                          |
 
 ### Examples
 
@@ -60,6 +63,32 @@ python -m generator config.yaml -o Jenkinsfile --lint
 
 # Generate documentation
 python -m generator config.yaml --generate_documentation
+```
+
+## How to debug?
+
+### VS Code
+
+In the `launch.json` file of the `.vscode` folder, add the following lines:
+
+```
+{
+  "configurations": [
+    {
+      "name": "Python Debugger: Module",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "generator",
+      "console": "integratedTerminal",
+      "args": [
+        "E:/Dev/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Config/jenkinsfile_pull_request.yaml",
+        "--output",
+        "E:/Dev/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Jenkinsfile",
+        "--lint"
+      ]
+    }
+  ]
+}
 ```
 
 ## Configuration File Structure
@@ -77,6 +106,8 @@ features:
   # Feature configurations go here
 ```
 
+See the [examples](examples) directory for configuration examples.
+
 ### Available Features
 
 - **`utils`**: Basic utilities (abort running builds, etc.)
@@ -86,7 +117,7 @@ features:
 - **`slack_notifications`**: Slack messaging for build events
 - **`unreal`**: Unreal Engine BuildGraph integration
 
-See the `Samples/` directory for complete configuration examples.
+You can also look at the [documentation](documentation/index.md) for the features.
 
 ## How the Feature System Works
 
