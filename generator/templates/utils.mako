@@ -17,7 +17,7 @@ ws( getWorkspace( this ${suffix} ) )
 // End of helper defs used accross multiple mako files
 
 <%def name="libraries()">
-@Library('jenkins-utils@no_github')
+@Library('jenkins-utils@master')
 </%def>
 
 <%def name="imports()">
