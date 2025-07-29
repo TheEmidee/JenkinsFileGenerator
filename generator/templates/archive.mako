@@ -30,9 +30,9 @@ def archivePackages() {
                     ."PyScripts/Tools/PyScript.ps1" `
                         -moduleName "uepyscripts.tools.archives.rotate_archives" `
                         -arguments @{ 
-                            directory_path = "${feature_config.rotate_archives.directory_path}",
-                            keep_count = "${feature_config.rotate_archives.keep_count}",
-                            output_file = "${feature_config.rotate_archives.output_file_name}"
+                            directory_path = "${feature_config.rotate_archives.directory_path.as_posix()}"
+                            keep_count = "${feature_config.rotate_archives.keep_count}"
+                            output_file = "${feature_config.rotate_archives.output_file_name.as_posix()}"
                         }
                 """
             }
