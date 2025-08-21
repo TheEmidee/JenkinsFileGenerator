@@ -1,7 +1,7 @@
 <%namespace name="utils" file="utils.mako"/>
 
 <%def name="build_steps()">
-## ${feature_config._accumulator['jenkins_jobs_output']}
+${feature_config._accumulator['jenkins_jobs_output']}
 </%def>
 
 <%def name="on_finally()">
