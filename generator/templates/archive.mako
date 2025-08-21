@@ -1,6 +1,6 @@
 <%namespace name="utils" file="utils.mako"/>
 
-<%def name="build_steps()">
+<%def name="post_build_steps()">
 % if feature_config.rotate_archives.enabled or feature_config.upload_archives.enabled:
 archivePackages()
 % endif
@@ -37,20 +37,21 @@ def archivePackages() {
                 """
 
                 % if feature_config.rotate_archives.slack and feature_config.rotate_archives.slack.enabled:
+                def foldername = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
                 slackSend( channel: "${feature_config.rotate_archives.slack.channel}", message: "${feature_config.rotate_archives.slack.message_template}" )
                 % endif
             }
             % endif
 
-            % if feature_config.upload_archives.enabled:
-
-            % if feature_config.rotate_archives.enabled:
-            def file = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
-            % else:
-            def file = "${feature_config.upload_archives.local_folder}"
-            % endif 
+            % if feature_config.upload_archives.enabled: 
 
             stage ( "Upload Archives" ) {
+                % if feature_config.rotate_archives.enabled:
+                def file = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+                % else:
+                def file = "${feature_config.upload_archives.local_folder}"
+                % endif
+                
                 pwsh """
                     ."PyScripts/Tools/PyScript.ps1" `
                         -moduleName "uepyscripts.tools.archives.upload_archives" `
