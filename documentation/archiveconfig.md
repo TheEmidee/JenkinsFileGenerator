@@ -46,7 +46,7 @@ Both actions have the same behavior:
 
     * **destination_folder**: Destination folder in the S3 bucket where the archives will be uploaded (  Type: `str` Default: `` )
 
-    * **keep_count**: Number of archives to keep in the S3 bucket (  Type: `int` Default: `10` )
+    * **keep_count**: Number of archives to keep in the S3 bucket. If lower than 1, all archives will be kept. (  Type: `int` Default: `-1` )
 
     * **output_file_name**: Optional path to text file where the download URLs of uploaded archives will be written (  Type: `Optional[pathlib.Path]` Default: `None` )
 

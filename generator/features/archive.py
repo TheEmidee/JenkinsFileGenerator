@@ -86,8 +86,8 @@ class UploadArchivesConfig(BaseModel):
         description="Destination folder in the S3 bucket where the archives will be uploaded"
     )
     keep_count: int = Field(
-        default=10,
-        description="Number of archives to keep in the S3 bucket"
+        default=-1,
+        description="Number of archives to keep in the S3 bucket. If lower than 1, all archives will be kept.",
     )
     output_file_name: Optional[Path] = Field(
         default=None,
