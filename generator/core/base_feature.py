@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Type
 from pydantic import BaseModel, PrivateAttr, ValidationError
 from mako.lookup import TemplateLookup
 
+from generator import logger
 from generator.core.pipeline_config import PipelineConfig
 from generator.core.generated_blocks import GeneratedBlocks
 from generator.core.template_context import TemplateContext
@@ -83,9 +84,7 @@ class BaseFeature(ABC):
                 # Block not defined in template - that's OK
                 pass
             except Exception as e:
-                print(
-                    f"Warning: Error rendering {block_type} for {self.feature_name}: {e}"
-                )
+                logger.error("Warning: Error rendering %s for %s : %s", block_type, self.feature_name, e)
 
         return blocks
 

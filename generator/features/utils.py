@@ -1,18 +1,14 @@
-"""Utilities feature for the Jenkins File Generator."""
+"""Utilities feature for the Jenkins File Generator.
+This will add the jenkins-utils library to give access to some utility functions such as initializeEnvironment"""
 
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Dict
+from pydantic import BaseModel
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
 
 
 class UtilsConfig(FeatureConfig):
     """Configuration model for the utils feature."""
-
-    abort_running_builds: Optional[bool] = Field(
-        default=True,
-        description="If true, aborts any running builds before starting a new one.",
-    )
 
 
 class UtilsFeature(BaseFeature):

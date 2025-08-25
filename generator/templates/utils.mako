@@ -17,7 +17,7 @@ ws( getWorkspace( this ${suffix} ) )
 // End of helper defs used accross multiple mako files
 
 <%def name="libraries()">
-@Library('jenkins-utils@no_github')
+@Library('jenkins-utils@master')
 </%def>
 
 <%def name="imports()">
@@ -26,9 +26,5 @@ import org.emidee.jenkins.Environment
 </%def>
 
 <%def name="pre_pipeline_steps()">
-% if feature_config.abort_running_builds :
-abortPreviousRunningBuilds()
-% endif
-
 ${initialize_env()}
 </%def>
