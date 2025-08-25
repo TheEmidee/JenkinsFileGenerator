@@ -19,6 +19,7 @@ It defines all the general settings, such as the project configuration, the glob
 
   * **features**: All the features that you want to use in your jenkins file (  Type: `Dict[str, Any]` Default: `{}` )
 # Features
+- [ArchiveConfig](archiveconfig.md)
 - [GitConfig](gitconfig.md)
 - [GitHubConfig](githubconfig.md)
 - [PropertiesConfig](propertiesconfig.md)

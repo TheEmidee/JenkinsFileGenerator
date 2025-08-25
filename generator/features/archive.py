@@ -1,9 +1,12 @@
 """Archive feature for the Jenkins File Generator.
 This feature allows to archive the artifacts or build products created by the jenkins pipeline.
+It also allows to upload the archives to an S3 bucket.
 
-You can rotate the archives:
-1. The folder pointed to by the `directory_path` will be renamed to the current date.
-2. The script will keep the specified number of most recent directories in the parent folder.
+Both actions have the same behavior:
+1. The local folder will be copied over to the shared folder / s3 bucket with the current date
+2. If a directory with the same name already exists, an incremental suffix will be added (_01, _02, etc...)
+3. Only the specified number of most recent directories in the parent folder will be kept, older ones will be deleted.
+4. Optionally, a slack notification can be sent on completion of the action.
 """
 
 from pathlib import Path

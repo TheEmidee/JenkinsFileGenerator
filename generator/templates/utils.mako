@@ -26,9 +26,5 @@ import org.emidee.jenkins.Environment
 </%def>
 
 <%def name="pre_pipeline_steps()">
-% if feature_config.abort_running_builds :
-abortPreviousRunningBuilds()
-% endif
-
 ${initialize_env()}
 </%def>

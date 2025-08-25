@@ -1,4 +1,5 @@
-"""Utilities feature for the Jenkins File Generator."""
+"""Utilities feature for the Jenkins File Generator.
+This will add the jenkins-utils library to give access to some utility functions such as initializeEnvironment"""
 
 from typing import Any, Dict
 from pydantic import BaseModel
