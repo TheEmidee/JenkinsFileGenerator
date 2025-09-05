@@ -84,7 +84,7 @@ class BaseFeature(ABC):
                 # Block not defined in template - that's OK
                 pass
             except Exception as e:
-                logger.error("Warning: Error rendering %s for %s : %s", block_type, self.feature_name, e)
+                logger.error("Error rendering %s for %s", block_type, self.feature_name, exc_info=e)
 
         return blocks
 
