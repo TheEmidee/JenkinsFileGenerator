@@ -225,15 +225,6 @@ class UnrealFeature(BaseFeature):
 
         extra_parameters = [f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
 
-        output_folder = uepyscripts.project.root_folder.joinpath(
-            uepyscripts.config["Jenkins"]["OutputFolder"]
-        )
-        logger.info("Output folder : %s", output_folder)
-        if not output_folder.exists():
-            raise FileNotFoundError(
-                "The folder where to output the jenkinsfile does not exist"
-            )
-
         uepyscripts.run(
             config.buildgraph.target, config.buildgraph.properties, extra_parameters
         )
