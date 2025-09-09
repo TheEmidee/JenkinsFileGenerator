@@ -114,6 +114,7 @@ See the [examples](examples) directory for configuration examples.
 - **`properties`**: Jenkins pipeline properties
 - **`git`**: Git checkout configuration
 - **`github`**: GitHub integration (PR handling, status updates)
+- **`plasticscm`**: PlasticSCM checkout configuration
 - **`slack_notifications`**: Slack messaging for build events
 - **`unreal`**: Unreal Engine BuildGraph integration
 
