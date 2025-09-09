@@ -38,11 +38,11 @@ class PlasticSCMCheckoutConfig(BaseModel):
     branch: str = Field(description="The branch name to checkout, overriden by shelveset and label.")
     changeset: Optional[str] = Field(
         default=None,
-        description="The changeset number to checkout, overriden by shelveset and label.",
+        description="The changeset to checkout, overriden by shelveset and label.",
     )
     shelveset: Optional[str] = Field(
         default=None,
-        description="The shelveset number to checkout, overrides branch and changeset, overriden by label.",
+        description="The shelveset to checkout, overrides branch and changeset, overriden by label.",
     )
     label: Optional[str] = Field(
         default=None,
@@ -52,6 +52,10 @@ class PlasticSCMCheckoutConfig(BaseModel):
     changelog: Optional[bool] = Field(
         default=True,
         description="Enable or Disable 'Include in changelog'.",
+    )
+    poll: Optional[bool] = Field(
+        default=False,
+        description="Enable or Disable 'Include in polling'.",
     )
 
     remote_config: RemoteConfig = Field(
@@ -65,7 +69,7 @@ class PlasticSCMCheckoutConfig(BaseModel):
 
     directory: Optional[str] = Field(
         default=None,
-        description="The subdirectory name to clone the repo, required if you use multiple workspaces.",
+        description="The workspace subdirectory to clone the repo, required if you use multiple workspaces.",
     )
 
     credentials_config: Optional[CredentialsConfig] = Field(
@@ -85,11 +89,7 @@ class PlasticSCMCheckoutConfig(BaseModel):
 class PlasticSCMConfig(FeatureConfig):
     """Configuration model for the Plastic SCM properties."""
 
-    use_simple_checkout: bool = Field(
-        default=True,
-        description="Set to true to uses a simple `checkout scm`. Otherwise fine-tune the checkout with the other properties.",
-    )
-    checkout: Optional[PlasticSCMCheckoutConfig] = Field(
+    checkout: PlasticSCMCheckoutConfig = Field(
         default=None,
         description="The checkout configuration. If use_simple_checkout is true, this will be ignored.",
     )

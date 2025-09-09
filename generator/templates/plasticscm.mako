@@ -2,9 +2,6 @@
 
 <%def name="additional_functions()">
 def checkout() {
-% if feature_config.use_simple_checkout:
-    checkout scm
-% else:
     cm(
     % if feature_config.checkout.shelveset or feature_config.checkout.label:
         % if feature_config.checkout.shelveset:
@@ -19,6 +16,7 @@ def checkout() {
         % endif
     % endif
         changelog: '${feature_config.checkout.changelog}',
+        poll: '${feature_config.checkout.poll}',
         repository: '${feature_config.checkout.remote_config.repository}',
         server: '${feature_config.checkout.remote_config.server}',
         cleanup: '${feature_config.checkout.cleanup}',
@@ -30,6 +28,5 @@ def checkout() {
         credentialsId: '${feature_config.checkout.credentials_config.credentials_id}',
     % endif
     )
-% endif
 }
 </%def>
