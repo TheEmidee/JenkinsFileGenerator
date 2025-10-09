@@ -3,7 +3,8 @@
 <%def name="additional_functions()">
 def checkout() {
 % if feature_config.use_simple_checkout:
-    return checkout scm
+    checkout scm
+    return []
 % else:
     return checkout([
         $class: 'GitSCM',
