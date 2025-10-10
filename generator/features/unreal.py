@@ -35,8 +35,6 @@ from generator.core.template_context import TemplateContext
 from generator.utils.graph import Graph
 
 TEMPLATE = """
-    def buildgraph_properties = "${ctx.inlined_properties}"
-
     def buildgraph_job_groups = [
 % for platform_name,platform in ctx.platforms.items():
     % for group_names in platform.parallel_groups:
@@ -55,7 +53,7 @@ TEMPLATE = """
     ]
 
     buildgraph_job_groups.each { group ->
-        executeJobsInParallel(group, buildgraph_properties)
+        executeJobsInParallel(group)
     }
 """
 
@@ -202,8 +200,9 @@ class UnrealFeature(BaseFeature):
 
     def render_block(self, block_type: str, context: TemplateContext, template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs = self.get_jenkins_jobs(context.feature_config)
+            jenkins_jobs, buildgraph_properties = self.get_jenkins_jobs(context.feature_config)
             context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
+            context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
 
         return super().render_block(block_type, context, template)
 
@@ -291,12 +290,14 @@ class UnrealFeature(BaseFeature):
             def __init__(
                 self, json_nodes: Any, buildgraph_properties: dict[str, str] = None
             ):
-                self.inlined_properties: str = ""
+                self.inlined_properties: str = 'def buildgraph_properties = """\n'
                 self.platforms: dict[str, BuildPlatform] = {}
 
                 if buildgraph_properties is not None:
-                    for key, value in buildgraph_properties.items():
-                        self.inlined_properties += f"-set:{key}={value} "
+                    lines = [f"-set:{key}={value}" for key, value in buildgraph_properties.items()]
+                    self.inlined_properties += "\n".join(lines)
+                
+                self.inlined_properties += '\n""".stripIndent().trim()'
 
                 for group in json_nodes["Groups"]:
                     platform_name = group["Agent Types"][0]
@@ -316,4 +317,4 @@ class UnrealFeature(BaseFeature):
         build_context = BuildContext(json_nodes, config.buildgraph.properties)
 
         jobs_template = Template(TEMPLATE)
-        return jobs_template.render(ctx=build_context)
+        return jobs_template.render(ctx=build_context), build_context.inlined_properties

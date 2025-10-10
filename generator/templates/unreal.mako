@@ -11,7 +11,7 @@ cleanup()
 </%def>
 
 <%def name="additional_functions()">
-def executeJobsInParallel(List jobGroup, String properties) {
+def executeJobsInParallel(List jobGroup) {
     def parallelJobs = [:]
     
     jobGroup.each { jobMap ->
@@ -20,8 +20,7 @@ def executeJobsInParallel(List jobGroup, String properties) {
                 runBuildGraph(
                     jobName,
                     jobConfig.tasks,
-                    jobConfig.platform,
-                    properties
+                    jobConfig.platform
                 )
             }
         }
@@ -31,7 +30,7 @@ def executeJobsInParallel(List jobGroup, String properties) {
     parallel parallelJobs
 }
 
-def runBuildGraph( groupName, taskNames, platform, properties ) {
+def runBuildGraph( groupName, taskNames, platform ) {
     def nodeName = "${full_config.jenkins.default_node_names} && <%text>${platform}</%text>"
 
     % if feature_config.buildgraph.node_name_filters is not None :
@@ -58,7 +57,9 @@ def runBuildGraph( groupName, taskNames, platform, properties ) {
         
         ${utils.get_workspace()}
         {
-            checkout()
+            def scmVars = checkout()
+
+            ${feature_config._accumulator['buildgraph_properties']}
 
             taskNames.each { String taskName ->
                 stage( taskName ) {
@@ -75,7 +76,7 @@ def runBuildGraph( groupName, taskNames, platform, properties ) {
                             -arguments @{ 
                                 target = "${taskName}" 
                                 build_tag = "${BUILD_TAG}"
-                                string_arguments = "${properties}"
+                                string_arguments = "${buildgraph_properties}"
                             }
                     """
                     </%text>
