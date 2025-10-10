@@ -290,12 +290,14 @@ class UnrealFeature(BaseFeature):
             def __init__(
                 self, json_nodes: Any, buildgraph_properties: dict[str, str] = None
             ):
-                self.inlined_properties: str = ""
+                self.inlined_properties: str = 'def buildgraph_properties = """\n'
                 self.platforms: dict[str, BuildPlatform] = {}
 
                 if buildgraph_properties is not None:
-                    lines = [f"\"-set:{key}={value}\"" for key, value in buildgraph_properties.items()]
-                    self.inlined_properties += " + \n".join(lines)
+                    lines = [f"-set:{key}={value}" for key, value in buildgraph_properties.items()]
+                    self.inlined_properties += "\n".join(lines)
+                
+                self.inlined_properties += '\n""".stripIndent().trim()'
 
                 for group in json_nodes["Groups"]:
                     platform_name = group["Agent Types"][0]
