@@ -294,8 +294,8 @@ class UnrealFeature(BaseFeature):
                 self.platforms: dict[str, BuildPlatform] = {}
 
                 if buildgraph_properties is not None:
-                    for key, value in buildgraph_properties.items():
-                        self.inlined_properties += f"-set:{key}={value} "
+                    lines = [f"\"-set:{key}={value}\"" for key, value in buildgraph_properties.items()]
+                    self.inlined_properties += " + \n".join(lines)
 
                 for group in json_nodes["Groups"]:
                     platform_name = group["Agent Types"][0]

@@ -59,7 +59,7 @@ def runBuildGraph( groupName, taskNames, platform ) {
         {
             def scmVars = checkout()
 
-            def buildgraph_properties = "${feature_config._accumulator['buildgraph_properties']}"
+            def buildgraph_properties = ${feature_config._accumulator['buildgraph_properties']}
 
             taskNames.each { String taskName ->
                 stage( taskName ) {
