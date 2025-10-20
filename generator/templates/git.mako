@@ -4,8 +4,9 @@
 def checkout() {
 % if feature_config.use_simple_checkout:
     checkout scm
+    return []
 % else:
-    checkout([
+    return checkout([
         $class: 'GitSCM',
         branches: [ ['name': '${feature_config.checkout.branch_name}' ] ],
         extensions: [

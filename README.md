@@ -81,9 +81,9 @@ In the `launch.json` file of the `.vscode` folder, add the following lines:
       "module": "generator",
       "console": "integratedTerminal",
       "args": [
-        "E:/Dev/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Config/jenkinsfile_pull_request.yaml",
+        "E:/Dev/Projects/YourGame/Scripts/Build/Jenkins/Config/jenkinsfile_pull_request.yaml",
         "--output",
-        "E:/Dev/Projects/Summercamp_pyscripts/Scripts/Build/Jenkins/Jenkinsfile",
+        "E:/Dev/Projects/YourGame/Scripts/Build/Jenkins/Jenkinsfile",
         "--lint"
       ]
     }
