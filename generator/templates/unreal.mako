@@ -69,9 +69,8 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     ${pre_task}
                     % endfor
 
-                    <%text>
-                    pwsh """
-                        ."PyScripts/Tools/PyScript.ps1" `
+                    <%text>pwsh """
+                        ."</%text>${feature_config.project.pyscripts_folder}<%text>/Tools/PyScript.ps1" `
                             -moduleName "uepyscripts.tools.ci.buildgraph" `
                             -arguments @{ 
                                 target = "${taskName}" 
@@ -117,9 +116,8 @@ def cleanup() {
             checkout()
 
             stage ( "Cleanup" ) {
-                <%text>
-                pwsh """
-                    ."PyScripts/Tools/PyScript.ps1" `
+                <%text>pwsh """
+                    ."</%text>${feature_config.project.pyscripts_folder}<%text>/Tools/PyScript.ps1" `
                         -moduleName "uepyscripts.tools.ci.cleanup" `
                         -arguments @{ 
                             build_tag = "${BUILD_TAG}"

@@ -112,10 +112,15 @@ class UnrealProjectConfig(BaseModel):
     uproject_path: Path = Field(
         description="The path to the .uproject file of the Unreal project."
     )
-    pyscripts_folder: Path = Field(
+    pyscripts_folder: str = Field(
         default_factory=lambda: None,
         description="Path to the PyScripts folder if it's not at the root of the uproject",
     )
+
+    def get_absolute_pyscripts_folder_path(self) -> Path:
+        """Get the absolute path to the uproject file."""
+        return ( self.uproject_path.parent / self.pyscripts_folder ).resolve()
+
     # Done like this to make it optional in the config file
     # but will try to be set to a relative path from the uproject_path
 
@@ -148,22 +153,16 @@ class UnrealProjectConfig(BaseModel):
             logger.debug("pyscripts_folder is not set. Default to PyScripts")
             self.pyscripts_folder = Path("PyScripts")
 
-        if not self.pyscripts_folder.is_absolute():
-            uproject_path = self.uproject_path
-            if uproject_path is None:
-                raise ValueError(
-                    "uproject_path must be validated before pyscripts_folder"
-                )
-
-            logger.debug(
-                "pyscripts_path is a relative path, resolving against the uproject located at %s",
-                uproject_path,
+        uproject_path = self.uproject_path
+        if uproject_path is None:
+            raise ValueError(
+                "uproject_path must be validated before pyscripts_folder"
             )
 
-            self.pyscripts_folder = uproject_path.parent / self.pyscripts_folder
+        absolute_pyscripts_folder = self.get_absolute_pyscripts_folder_path()
 
-        if not self.pyscripts_folder.is_dir():
-            raise ValueError(f"Pyscripts folder not found at {self.pyscripts_folder}.")
+        if not absolute_pyscripts_folder.is_dir():
+            raise ValueError(f"Pyscripts folder not found at {absolute_pyscripts_folder}.")
 
         logger.info("Resolved pyscripts_folder: %s", self.pyscripts_folder)
         return self
@@ -208,7 +207,7 @@ class UnrealFeature(BaseFeature):
 
     def get_jenkins_jobs(self, config: UnrealConfig) -> str:
         """Generate the Jenkins jobs for Unreal."""
-        module_path = config.project.pyscripts_folder
+        module_path = config.project.get_absolute_pyscripts_folder_path()
         module_name = "uepyscripts.run.buildgraph"
 
         abs_package_root = os.path.abspath(module_path)
