@@ -85,7 +85,7 @@ class UnrealBuildGraphConfig(BaseModel):
     )
     pre_tasks: Optional[List[str]] = Field(
         default=None,
-        description="List of tasks to run before the buildgraph tasks. These are run as shell commands. (Ex: `'pwsh script: \"Scripts/Project/CI/CI_NetUse.ps1\"'`)",
+        description="List of powershell tasks to run before the buildgraph tasks. They will be executed in a pwsh '''task''' block",
     )
     post_tasks: Optional[UnrealBuildGraphPostTasksConfig] = Field(
         default_factory=UnrealBuildGraphPostTasksConfig(),

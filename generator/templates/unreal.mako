@@ -66,7 +66,9 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     preBuildGraphTasks()
 
                     % for pre_task in feature_config.buildgraph.pre_tasks:
-                    ${pre_task}
+                    <%text>pwsh """</%text>
+                    ."${pre_task}"
+                    <%text>"""</%text>
                     % endfor
 
                     <%text>pwsh """
