@@ -43,7 +43,12 @@ class JenkinsfileGenerator:
         )
 
         all_blocks = GeneratedBlocks()
-        global_values = {"generator_version": "1.0.0", "output_feature_sections": False}
+        global_values = {
+            "generator_version": "1.0.0", 
+            "output_feature_sections": False, 
+            "source_yaml_file": config_path,
+            "blackboard_data": blackboard_data,
+        }
 
         for feature in ordered_features:
             try:
