@@ -1,9 +1,11 @@
 ## templates/base_jenkinsfile.mako
 ## Base Jenkinsfile template that combines all feature outputs
 
-// THIS FILE HAS BEEN AUTO-GENERATED USING JenkinsFileGenerator
+// THIS FILE HAS BEEN AUTO-GENERATED USING JenkinsFileGenerator - https://github.com/TheEmidee/JenkinsFileGenerator
 // Version : ${global_values['generator_version']}
 // Pipeline name : ${full_config.pipeline_name}
+// Source YAML file : ${global_values['source_yaml_file']}
+// Blackboard Data : ${global_values['blackboard_data']}
 
 ${libraries}
 

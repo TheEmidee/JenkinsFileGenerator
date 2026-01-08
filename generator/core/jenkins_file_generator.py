@@ -3,6 +3,7 @@
 from typing import Any, Dict, List
 from mako.lookup import TemplateLookup
 
+import re
 import yaml
 
 from generator import logger
@@ -24,10 +25,10 @@ class JenkinsfileGenerator:
         self.template_lookup = TemplateLookup(directories=[str(self.templates_dir)])
         self.base_template_path = "base_jenkinsfile.mako"
 
-    def generate_jenkinsfile(self, config_path: str, output_path: str) -> None:
+    def generate_jenkinsfile(self, config_path: str, output_path: str, blackboard_data: str = "") -> None:
         """Main method to generate a Jenkinsfile from configuration."""
 
-        config = self.load_config(config_path)
+        config = self.load_config(config_path, blackboard_data)
         selected_features = self.select_features(config)
         logger.info(
             "Selected %s features: %s",
@@ -42,7 +43,12 @@ class JenkinsfileGenerator:
         )
 
         all_blocks = GeneratedBlocks()
-        global_values = {"generator_version": "1.0.0", "output_feature_sections": False}
+        global_values = {
+            "generator_version": "1.0.0", 
+            "output_feature_sections": False, 
+            "source_yaml_file": config_path,
+            "blackboard_data": blackboard_data,
+        }
 
         for feature in ordered_features:
             try:
@@ -65,15 +71,32 @@ class JenkinsfileGenerator:
 
         self.render_final_jenkinsfile(all_blocks, config, global_values, output_path)
 
-    def load_config(self, config_path: str) -> PipelineConfig:
+    def load_config(self, config_path: str, blackboard_data: str = "") -> PipelineConfig:
         """Load and parse YAML configuration file."""
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                yaml_contents = yaml.safe_load(f)
-                validation_context = {"config_file_path": config_path}
-                return PipelineConfig.model_validate(
-                    yaml_contents, context=validation_context
-                )
+                yaml_str = f.read()
+
+            if blackboard_data != '':
+                blackboard_data_dict: dict[str, str] = dict(item.split('=') for item in blackboard_data.split(','))
+
+                for key, value in blackboard_data_dict.items():
+                    logger.info(
+                        "Replace blackboard data key %s by %s",
+                        key, value,
+                    )
+                    placeholder = f"^BLACKBOARD_DATA.{key}^"
+                    yaml_str = yaml_str.replace(placeholder, value)
+
+                remaining_tokens = re.findall(r'\^BLACKBOARD_DATA\.[^\^]+\^', yaml_str)
+                if remaining_tokens:
+                    raise ValueError(f"Unresolved BLACKBOARD_DATA tokens in config: {remaining_tokens}")
+
+            yaml_contents = yaml.safe_load(yaml_str)
+            validation_context = {"config_file_path": config_path}
+            return PipelineConfig.model_validate(
+                yaml_contents, context=validation_context
+            )
         except Exception as e:
             raise ValueError(f"Failed to load config file '{config_path}': {e}") from e
 

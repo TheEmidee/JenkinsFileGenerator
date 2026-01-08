@@ -61,6 +61,12 @@ Examples:
     )
 
     parser.add_argument(
+        "-bbd",
+        "--blackboarddata",
+        default="",
+        help="A comma separated list of key=value pairs to be used in the blackboard (Ex: build_type=Development,platform=Windows). These values can be referenced in the config file using ^BLACKBOARD_DATA.key^ syntax.",
+    )
+    parser.add_argument(
         "--lint", action="store_true", help="Run npm-groovy-lint on the generated file"
     )
     parser.add_argument(
@@ -68,7 +74,6 @@ Examples:
         action="store_true",
         help="Skip configuration validation (not recommended)",
     )
-
     parser.add_argument(
         "-v",
         "--verbose",
@@ -126,7 +131,7 @@ Examples:
         logger.info("Step 2/3: Generating Jenkinsfile...")
 
         generator = JenkinsfileGenerator()
-        generator.generate_jenkinsfile(args.config, args.output)
+        generator.generate_jenkinsfile(args.config, args.output, args.blackboarddata)
 
         logger.info("✅ Jenkinsfile generated successfully: %s", args.output)
 
