@@ -43,7 +43,9 @@ python -m generator <config_file> [options]
 | Argument                   | Type | Required | Description                                        |
 | -------------------------- | ---- | -------- | ---------------------------------------------------|
 | `config`                   | Path | Yes      | Path to the YAML configuration file                |
-| `-o, --output`             | Path | No       | Output path for the generated Jenkinsfile          |
+| `-o, --output`             | Path | Yes      | Output path for the generated Jenkinsfile          |
+| `--batch`                  | Path | No       | Path to a YAML batch file                          |
+| `-bbd, --blackboarddata`   | Str  | No       | A comma separated list of key=value pairs          |
 | `--lint`                   | Flag | No       | Run npm-groovy-lint on the generated file          |
 | `--generate-documentation` | Flag | No       | Generates the configuration documentation          |
 | `--validate`               | Flag | No       | Validates the config file and the mako templates   |
@@ -61,9 +63,76 @@ python -m generator config.yaml -o Jenkinsfile
 # With linting
 python -m generator config.yaml -o Jenkinsfile --lint
 
+# With the blackboard data
+python -m generator config.yaml -o Jenkinsfile --blackboarddata "build_type=Development,platform=Windows" --lint
+
+# Use a batch file with linting
+python -m generator --batch batch.yaml --lint
+
 # Generate documentation
 python -m generator config.yaml --generate_documentation
 ```
+
+## Blackboard data
+
+If you need to use the same token multiple times in a YAML config file, it is possible to specify that token in the blackboard data, with the `--blackboarddata` argument, which accepts a comma separated list of key=value pairs.
+
+For example `build_type=Development,platform=Windows`.
+
+In your config file, you can use the syntax `^BLACKBOARD_DATA.key^`.
+
+So for example if in your config file you have the following text:
+
+```
+pipeline_name: "MyGame_^BLACKBOARD_DATA.build_type^"
+project:
+  name: "MyGame"
+jenkins:
+  default_node_names: "UE_5.2"
+features:
+  git:
+    use_simple_checkout: false
+    checkout:
+      branch_name: "refs/heads/^BLACKBOARD_DATA.branch_name^"
+```
+
+You can pass the string `build_type=Development,branch_name=develop`, which will update the config file to 
+
+```
+pipeline_name: "MyGame_Development"
+project:
+  name: "MyGame"
+jenkins:
+  default_node_names: "UE_5.2"
+features:
+  git:
+    use_simple_checkout: false
+    checkout:
+      branch_name: "refs/heads/develop"
+```
+
+before using this updated version of the config file to generate the final jenkinsfile.
+
+## Batch generation
+
+Instead of using the `config` and `--output` arguments to generate a single jenkinsfile, it's possible to use the `--batch` argument to specify the path to a YAML file which contains a list of items which will each generate a different jenkinsfile.
+
+The structure of the YAML file should start with an `items` property, which is an array of `input_config_file`, `output_jenkinsfile` and `blackboard_data`. The `input_config_file` and `output_jenkinsfile` properties are both relative path to the batch config file.
+
+```
+items:
+- input_config_file: "jenkinsfile_release_template.yaml"
+  output_jenkinsfile: "../Jenkinsfile_Release_Development"
+  blackboard_data: "build_type=Development,branch_name=develop"
+- input_config_file: "jenkinsfile_release_template.yaml"
+  output_jenkinsfile: "../Jenkinsfile_Release_Staging"
+  blackboard_data: "build_type=Staging,branch_name=staging"
+- input_config_file: "jenkinsfile_release_template.yaml"
+  output_jenkinsfile: "../Jenkinsfile_Release_Production"
+  blackboard_data: "build_type=Production,branch_name=release"
+```
+
+This is a great way to generate, from the same template file, multiple outputs with different values, in one command, without having to maintain multiple config files.
 
 ## How to debug?
 
