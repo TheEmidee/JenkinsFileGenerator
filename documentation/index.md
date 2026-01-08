@@ -22,6 +22,7 @@ It defines all the general settings, such as the project configuration, the glob
 - [ArchiveConfig](archiveconfig.md)
 - [GitConfig](gitconfig.md)
 - [GitHubConfig](githubconfig.md)
+- [PlasticSCM](plasticscm.md)
 - [PropertiesConfig](propertiesconfig.md)
 - [SlackNotificationsConfig](slacknotificationsconfig.md)
 - [UnrealConfig](unrealconfig.md)
