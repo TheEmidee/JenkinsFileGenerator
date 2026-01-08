@@ -1,0 +1,100 @@
+# This is an example of a full UE pipeline configuration for an unreal project
+# It uses the blackboard data to define various properties, which allows to create different pipelines for different build types using the same template, using the --batch argument
+
+pipeline_name: "mygame_^BLACKBOARD_DATA.build_type^"
+project:
+  name: "mygame"
+jenkins:
+  default_node_names: "UE_5.2"
+  workspace_suffix: ""
+features:
+  properties:
+    items:
+      - "disableConcurrentBuilds( abortPrevious: true )"
+      - "buildDiscarder( logRotator( numToKeepStr: '10' ) )"
+      - "githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/MyCompany/mygame/')"
+      - "parameters(\n
+  [\n
+    choice(name: 'DRM', choices: ['NoDRM','WithDRM'], description: 'What DRM should be enabled?')\n
+  ])"
+  # The DRM parameter is used below dynamically in the buildgraph properties by using ${params.DRM}
+  slack_notifications:
+    channel: "#p-mygame-ci"
+    message_template: " : ${env.JOB_NAME} - ${env.CHANGE_BRANCH} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
+  git:
+    use_simple_checkout: false
+    checkout:
+      branch_name: "refs/heads/^BLACKBOARD_DATA.branch_name^"
+      extensions:
+        CheckoutOption:
+          timeout: 120
+        SubmoduleOption:
+          disableSubmodules: false
+          parentCredentials: true
+          recursiveSubmodules: true
+          reference: ""
+          timeout: 120
+          trackingSubmodules: false
+        GitLFSPull:
+          enabled: true
+      user_remote_config:
+        credentials_id:
+          id: "Jenkinsmygame"
+          url: "git@github.com:MyCompany/mygame.git"
+  unreal:
+    project:
+      uproject_path: "../../../../mygame.uproject"
+      pyscripts_folder: "Scripts/PyScripts"
+    buildgraph:
+      target: "BuildAndTest mygame"
+      properties:
+        Clean: "True"
+        Targets: "mygameClient+mygameServer"
+        TargetConfigurations: "Development+Shipping"
+        With_Publish: "True"
+        Publish_Directory: "//nas/Versions/mygame/^BLACKBOARD_DATA.build_type^/${params.DRM}/WIP"
+        CI-BuildId: "${env.BUILD_NUMBER}"
+      pre_tasks:
+        # CI_NetUse maps the network drives needed for the build
+        - 'pwsh "Scripts/Project/CI/CI_NetUse.ps1"'
+      post_tasks:
+        enabled: true
+        archive_artifacts: true
+    cleanup_after_build:
+      enabled: true
+      additional_node_name: "Win64"
+  archive:
+    # This will add a stage in the pipeline which will call the module uepyscripts.tools.archives.rotate_archives from https://github.com/TheEmidee/UEPyScripts
+    rotate_archives:
+      enabled: true
+      # Notice this is the same path as the Publish_Directory above
+      directory_path: "//nas/Versions/mygame/^BLACKBOARD_DATA.build_type^/${params.DRM}/WIP"
+      # We keep all the versions in the shared folder
+      keep_count: -1
+      # We output in this text file the name of the folder where the package was archived
+      folder_output_file_name: "${env.WORKSPACE}/Saved/Temp/latest_archive_^BLACKBOARD_DATA.build_type^.txt"
+      slack:
+        enabled: true
+        channel: "#p-mygame"
+        # foldername is automatically defined by the rotate_archives module with the contents of the file folder_output_file_name above
+        # this allows to send a message to slack with the URL of the shared folder
+        message_template: "New ^BLACKBOARD_DATA.build_type^ build available : ${foldername}"
+    upload_archives:
+      # Now we enable the upload to S3 of the folder containing the archived builds
+      # Since we enabled rotate_archives above, this task will automatically read the contents of folder_output_file_name above to know which folder to upload
+      # If we want to directly upload, we would have had to specify the local_folder property here
+      enabled: true
+      bucket_name: "mygame-artifacts"
+      region: "eu-west-3"
+      access_key: "XXX"
+      secret_key: "YYY"
+      # We split the archives per DRM type to not mix them
+      destination_folder: "^BLACKBOARD_DATA.build_type^/${params.DRM}"
+      keep_count: -1
+      # The file where to output the S3 download URLs of the files we uploaded
+      output_file_name: "${env.WORKSPACE}/Saved/Temp/uploaded_files_^BLACKBOARD_DATA.build_type^.txt"
+      # Each uploaded file will generate a slack message with its URL
+      slack:
+        enabled: true
+        channel: "#p-mygame"
+        message_template: "<${url}|${filename}>"
