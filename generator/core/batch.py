@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 import yaml
 
 
@@ -8,7 +8,10 @@ class GenerationItem(BaseModel):
     """Class for keeping track of the information required to generate a jenkinsfile."""
     input_config_file: Path
     output_jenkinsfile: Path
-    blackboard_data: str
+    blackboard_data: str = Field(
+        default="",
+        description="The blackboard data to use for this item",
+    )
     
     @field_validator('input_config_file', 'output_jenkinsfile', mode='before')
     @classmethod
