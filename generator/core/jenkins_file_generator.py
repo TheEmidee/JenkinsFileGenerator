@@ -1,5 +1,6 @@
 """The main entry point for generating a Jenkinsfile from a configuration file."""
 
+from pathlib import Path
 from typing import Any, Dict, List
 from mako.lookup import TemplateLookup
 
@@ -25,7 +26,7 @@ class JenkinsfileGenerator:
         self.template_lookup = TemplateLookup(directories=[str(self.templates_dir)])
         self.base_template_path = "base_jenkinsfile.mako"
 
-    def generate_jenkinsfile(self, config_path: str, output_path: str, blackboard_data: str = "") -> None:
+    def generate_jenkinsfile(self, config_path: Path, output_path: Path, blackboard_data: str = "") -> None:
         """Main method to generate a Jenkinsfile from configuration."""
 
         config = self.load_config(config_path, blackboard_data)
