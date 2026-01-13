@@ -58,9 +58,6 @@ features:
       pre_tasks:
         # CI_NetUse maps the network drives needed for the build
         - 'pwsh "Scripts/Project/CI/CI_NetUse.ps1"'
-      post_tasks:
-        enabled: true
-        archive_artifacts: true
     cleanup_after_build:
       enabled: true
       additional_node_name: "Win64"
