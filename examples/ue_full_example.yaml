@@ -2,6 +2,7 @@
 # It uses the blackboard data to define various properties, which allows to create different pipelines for different build types using the same template, using the --batch argument
 
 pipeline_name: "mygame_^BLACKBOARD_DATA.build_type^"
+customization_folder: "Customization"
 project:
   name: "mygame"
 jenkins:

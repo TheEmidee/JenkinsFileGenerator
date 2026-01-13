@@ -134,6 +134,28 @@ items:
 
 This is a great way to generate, from the same template file, multiple outputs with different values, in one command, without having to maintain multiple config files.
 
+## Customizing the output
+
+Some features have entry points in the output they generate, to allow you to define custom code for your project.
+
+You can find those entry points by looking for code like this in the mako files of this repository:
+
+```
+% if global_values['customization'].get('XXX'):
+<%include file="${global_values['customization']['XXX']}"/>
+% endif
+```
+
+To output your own code, you need to follow these simple steps:
+
+1. Create a folder next to your config file that will contain your customization code (Ex: `Customization`)
+2. Set the property `customization_folder` of your pipeline config to the name of your folder (If you place that folder in another location, you can use a relative path here. You can also use an absolute path if you want)
+3. In that folder, create a file for each customization you want. For example, the unreal feature supports `unreal_postBuildGraphTasks`. So you would create a file named `unreal_postBuildGraphTasks.mako` in that folder. Note that you can use the context data that the mako template engine uses, so you have the exact same data that is used when the feature is processed.
+
+That's it !
+
+You can check [ue_full_example.yaml](examples/ue_full_example.yaml) for a working configuration.
+
 ## How to debug?
 
 ### VS Code
