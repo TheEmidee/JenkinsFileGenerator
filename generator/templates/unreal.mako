@@ -80,22 +80,11 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     """
                     </%text>
 
-                    % if feature_config.buildgraph.post_tasks.enabled:
                     postBuildGraphTasks( taskName )
-                    % endif
                 }
             }
         }
     }
-}
-
-def preBuildGraphTasks() {
-    fileOperations( 
-        [ 
-            fileDeleteOperation( excludes: '', includes: 'Saved\\Jenkins\\*.txt' ),
-            fileDeleteOperation( excludes: '', includes: 'Saved\\Logs\\*.*' )
-        ] 
-    )
 }
 
 % if feature_config.cleanup_after_build.enabled:
@@ -125,42 +114,36 @@ def cleanup() {
                 """
                 </%text>
             }
+
+            postCleanupTasks()
         }
     }
 }
 % endif
 
-% if feature_config.buildgraph.post_tasks.enabled:
-def postBuildGraphTasks( String taskName ) {
-    def warnings_files = findFiles glob: 'Saved\\Jenkins\\*.txt'
-
-    <%text>def record_issues_id = "BuildGraph_${taskName}".replaceAll('\\s+', '_');</%text>
-    def quality_gates = [[threshold: 1, type: 'TOTAL', unstable: false], [threshold: 1, type: 'TOTAL_ERROR', unstable: false]]
-
-    if ( taskName.contains( "Compile" ) ) {
-        recordIssues enabledForFailure: true, failOnError: true, qualityGates : quality_gates, tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/Compile_*.log' ) ]
-    } else if ( taskName.contains( "Static Analysis" ) ) {
-        recordIssues enabledForFailure: true, failOnError: true, qualityGates : quality_gates, tools: [ msBuild( id: record_issues_id, name: record_issues_id, pattern: 'Saved/Logs/StaticAnalysis_*.log' ) ]
-    }
-
-    if ( warnings_files.length > 0 ) {
-        recordIssues enabledForFailure: true, failOnError: true, qualityGates : quality_gates, tools: [groovyScript(id: record_issues_id, name: record_issues_id, parserId: 'UE_BuildgraphWarnings', pattern: 'Saved/Jenkins/*.txt')]
-        % if feature_config.buildgraph.post_tasks.archive_artifacts:
-        archiveArtifacts artifacts: 'Saved\\Jenkins\\*.txt', followSymlinks: false
-        % endif
-    }
-
-    def functional_tests_results_path = 'Saved\\Tests\\Logs\\FunctionalTestsResults.xml'
-    if ( fileExists( functional_tests_results_path ) ) {
-        junit testResults: functional_tests_results_path
-        % if feature_config.buildgraph.post_tasks.archive_artifacts:
-        archiveArtifacts artifacts: 'Saved\\Tests\\Logs\\*.xml', followSymlinks: false
-        % endif
-    }
-    
-    % if feature_config.buildgraph.post_tasks.archive_artifacts:
-    archiveArtifacts artifacts: 'Saved\\Logs\\*.log', followSymlinks: false, allowEmptyArchive: true
+def postCleanupTasks() {
+    % if global_values['overrides'].get('unreal_postCleanupTasks'):
+    <%include file="${global_values['overrides']['unreal_postCleanupTasks']}"/>
     % endif
 }
-% endif
+
+def preBuildGraphTasks() {
+    fileOperations( 
+        [ 
+            fileDeleteOperation( excludes: '', includes: 'Saved\\Jenkins\\*.txt' ),
+            fileDeleteOperation( excludes: '', includes: 'Saved\\Logs\\*.*' )
+        ] 
+    )
+
+    % if global_values['overrides'].get('unreal_preBuildGraphTasks'):
+    <%include file="${global_values['overrides']['unreal_preBuildGraphTasks']}"/>
+    % endif
+}
+
+
+def postBuildGraphTasks( String taskName ) {
+    % if global_values['overrides'].get('unreal_postBuildGraphTasks'):
+    <%include file="${global_values['overrides']['unreal_postBuildGraphTasks']}"/>
+    % endif
+}
 </%def>
