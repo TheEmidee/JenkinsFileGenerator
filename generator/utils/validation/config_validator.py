@@ -161,8 +161,8 @@ class ConfigValidator(BaseValidator):
             with open(self.config_path, "r", encoding="utf-8") as f:
                 yaml_contents = yaml.safe_load(f)
 
-                self.validated_config = PipelineConfig(
-                    **yaml_contents, context={"config_file_path": self.config_path}
+                self.validated_config = PipelineConfig.model_validate(
+                    yaml_contents, context={"config_file_path": self.config_path}
                 )
 
         except ValidationError as e:
