@@ -31,8 +31,8 @@ class JenkinsfileGenerator:
             str(self.templates_dir)
             ]
         
-        if config.overrides_folder != None:
-            directories.insert(0,str(config.overrides_folder))
+        if config.customization_folder is not None:
+            directories.insert(0,str(config.customization_folder))
             
         self.template_lookup = TemplateLookup(directories=directories)
 
@@ -61,9 +61,9 @@ class JenkinsfileGenerator:
             "output_feature_sections": False, 
             "source_yaml_file": config_path,
             "blackboard_data": blackboard_data,
-            "overrides" : {
+            "customization" : {
                 file.stem: file.name
-                for file in Path(config.overrides_folder).rglob("*.mako")
+                for file in Path(config.customization_folder).rglob("*.mako")
             }
         }
 

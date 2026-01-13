@@ -122,8 +122,8 @@ def cleanup() {
 % endif
 
 def postCleanupTasks() {
-    % if global_values['overrides'].get('unreal_postCleanupTasks'):
-    <%include file="${global_values['overrides']['unreal_postCleanupTasks']}"/>
+    % if global_values['customization'].get('unreal_postCleanupTasks'):
+    <%include file="${global_values['customization']['unreal_postCleanupTasks']}"/>
     % endif
 }
 
@@ -135,15 +135,15 @@ def preBuildGraphTasks() {
         ] 
     )
 
-    % if global_values['overrides'].get('unreal_preBuildGraphTasks'):
-    <%include file="${global_values['overrides']['unreal_preBuildGraphTasks']}"/>
+    % if global_values['customization'].get('unreal_preBuildGraphTasks'):
+    <%include file="${global_values['customization']['unreal_preBuildGraphTasks']}"/>
     % endif
 }
 
 
 def postBuildGraphTasks( String taskName ) {
-    % if global_values['overrides'].get('unreal_postBuildGraphTasks'):
-    <%include file="${global_values['overrides']['unreal_postBuildGraphTasks']}"/>
+    % if global_values['customization'].get('unreal_postBuildGraphTasks'):
+    <%include file="${global_values['customization']['unreal_postBuildGraphTasks']}"/>
     % endif
 }
 </%def>

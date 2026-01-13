@@ -34,7 +34,7 @@ class PipelineConfig(BaseModel):
     pipeline_name: str = Field(
         description="Pipeline name. Used as an identifier at the top of the jenkinsfile"
     )
-    overrides_folder: Path = Field(
+    customization_folder: Path = Field(
         default=None,
         description="Path to a folder containing templates to use to override specific parts of some features. The path can be absolute, or relative to the config file"
     )
@@ -47,7 +47,7 @@ class PipelineConfig(BaseModel):
 
     @model_validator(mode="after")
     def validate_model(self, info: ValidationInfo) -> "PipelineConfig":
-        if not self.overrides_folder.is_absolute():
+        if not self.customization_folder.is_absolute():
             config_file_path = (
                 info.context.get("config_file_path") if info.context else None
             )
@@ -55,17 +55,17 @@ class PipelineConfig(BaseModel):
             if config_file_path:
                 # Resolve relative to config file directory
                 config_dir = Path(config_file_path).parent
-                self.overrides_folder = (config_dir / self.overrides_folder).resolve()
+                self.customization_folder = (config_dir / self.customization_folder).resolve()
                 logger.debug(
-                    "Resolved overrides_folder relative to config file: %s",
-                    self.overrides_folder,
+                    "Resolved customization_folder relative to config file: %s",
+                    self.customization_folder,
                 )
             else:
                 return self
 
-        if not self.overrides_folder.is_dir():
-            raise ValueError("overrides_folder does not point to a valid folder")
+        if not self.customization_folder.is_dir():
+            raise ValueError("customization_folder does not point to a valid folder")
 
-        logger.info("Resolved overrides_folder: %s", self.overrides_folder)
+        logger.info("Resolved customization_folder: %s", self.customization_folder)
 
         return self
