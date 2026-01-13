@@ -23,14 +23,26 @@ class JenkinsfileGenerator:
 
     def __init__(self):
         self.templates_dir = constants.TEMPLATES_FOLDER
-        self.template_lookup = TemplateLookup(directories=[str(self.templates_dir)])
         self.base_template_path = "base_jenkinsfile.mako"
+        self.template_lookup = None
+
+    def __create_template_lookup(self, config: PipelineConfig):
+        directories=[
+            str(self.templates_dir)
+            ]
+        
+        if config.overrides_folder != None:
+            directories.insert(0,str(config.overrides_folder))
+            
+        self.template_lookup = TemplateLookup(directories=directories)
 
     def generate_jenkinsfile(self, config_path: Path, output_path: Path, blackboard_data: str = "") -> None:
         """Main method to generate a Jenkinsfile from configuration."""
 
-        config = self.load_config(config_path, blackboard_data)
-        selected_features = self.select_features(config)
+        config = self.__load_config(config_path, blackboard_data)
+        self.__create_template_lookup(config)
+        
+        selected_features = self.__select_features(config)
         logger.info(
             "Selected %s features: %s",
             len(selected_features),
@@ -49,6 +61,10 @@ class JenkinsfileGenerator:
             "output_feature_sections": False, 
             "source_yaml_file": config_path,
             "blackboard_data": blackboard_data,
+            "overrides" : {
+                file.stem: file.name
+                for file in Path(config.overrides_folder).rglob("*.mako")
+            }
         }
 
         for feature in ordered_features:
@@ -70,9 +86,9 @@ class JenkinsfileGenerator:
                     f"Failed to process feature '{feature.feature_name}': {e}"
                 ) from e
 
-        self.render_final_jenkinsfile(all_blocks, config, global_values, output_path)
+        self.__render_final_jenkinsfile(all_blocks, config, global_values, output_path)
 
-    def load_config(self, config_path: str, blackboard_data: str = "") -> PipelineConfig:
+    def __load_config(self, config_path: str, blackboard_data: str = "") -> PipelineConfig:
         """Load and parse YAML configuration file."""
         try:
             with open(config_path, "r", encoding="utf-8") as f:
@@ -101,7 +117,7 @@ class JenkinsfileGenerator:
         except Exception as e:
             raise ValueError(f"Failed to load config file '{config_path}': {e}") from e
 
-    def select_features(self, config: PipelineConfig) -> List[BaseFeature]:
+    def __select_features(self, config: PipelineConfig) -> List[BaseFeature]:
         """Select and instantiate features based on configuration."""
         selected_features: List[BaseFeature] = []
 
@@ -114,7 +130,7 @@ class JenkinsfileGenerator:
 
         return selected_features
 
-    def render_final_jenkinsfile(
+    def __render_final_jenkinsfile(
         self,
         blocks: GeneratedBlocks,
         config: PipelineConfig,
