@@ -1,10 +1,13 @@
 """Configuration for the Jenkins pipeline generator.
 This is what should be at the top of the config file.
-It defines all the general settings, such as the project configuration, the global jenkins configuration, and the features to be used in the pipeline."""
+It defines all the general settings, such as the project configuration, 
+the global jenkins configuration, and the features to be used in the pipeline."""
 
+from pathlib import Path
 from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationInfo, model_validator
 
+from generator import logger
 
 class ProjectConfig(BaseModel):
     """Project specific configuration."""
@@ -31,9 +34,38 @@ class PipelineConfig(BaseModel):
     pipeline_name: str = Field(
         description="Pipeline name. Used as an identifier at the top of the jenkinsfile"
     )
+    customization_folder: Path = Field(
+        default=None,
+        description="Path to a folder containing templates to use to override specific parts of some features. The path can be absolute, or relative to the config file"
+    )
     project: ProjectConfig = Field(description="Project Configuration")
     jenkins: JenkinsConfig = Field(description="Jenkins Configuration")
     features: Dict[str, Any] = Field(
         default={},
         description="All the features that you want to use in your jenkins file",
     )
+
+    @model_validator(mode="after")
+    def validate_model(self, info: ValidationInfo) -> "PipelineConfig":
+        if not self.customization_folder.is_absolute():
+            config_file_path = (
+                info.context.get("config_file_path") if info.context else None
+            )
+
+            if config_file_path:
+                # Resolve relative to config file directory
+                config_dir = Path(config_file_path).parent
+                self.customization_folder = (config_dir / self.customization_folder).resolve()
+                logger.debug(
+                    "Resolved customization_folder relative to config file: %s",
+                    self.customization_folder,
+                )
+            else:
+                return self
+
+        if not self.customization_folder.is_dir():
+            raise ValueError("customization_folder does not point to a valid folder")
+
+        logger.info("Resolved customization_folder: %s", self.customization_folder)
+
+        return self

@@ -36,9 +36,6 @@ features:
       properties:
         Skip_Test_EditorBoot: "True"
         Skip_Test_TargetBoot: "True"
-      post_tasks:
-        enabled: true
-        archive_artifacts: true
     cleanup_after_build:
       enabled: true
       additional_node_name: "Win64"
