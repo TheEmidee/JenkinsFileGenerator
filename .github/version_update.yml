@@ -1,0 +1,112 @@
+name: Check Version Updates
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-version-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Check version consistency
+        run: |
+          set +e  # Don't exit on first error, collect all issues
+          ERRORS=0
+          
+          echo "🔍 Checking version updates..."
+          echo ""
+          
+          # Check if CHANGELOG.md was modified
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          if ! echo "$CHANGED_FILES" | grep -q "^CHANGELOG.md$"; then
+            echo "❌ CHANGELOG.md has not been updated"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "✅ CHANGELOG.md was modified"
+          fi
+          echo ""
+          
+          # Extract the latest version from CHANGELOG.md
+          CHANGELOG_VERSION=$(grep -oP '##\s*\[\K[0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -n 1)
+          
+          if [ -z "$CHANGELOG_VERSION" ]; then
+            echo "❌ Could not find a version entry in CHANGELOG.md (format: ## [X.Y.Z] - YYYY-MM-DD)"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "📋 Latest CHANGELOG version: $CHANGELOG_VERSION"
+            
+            # Check if this version was added in this PR
+            git diff origin/${{ github.base_ref }}...HEAD CHANGELOG.md | grep -q "^+.*## \[$CHANGELOG_VERSION\]"
+            if [ $? -eq 0 ]; then
+              echo "✅ New version entry added to CHANGELOG.md"
+            else
+              echo "⚠️  Version $CHANGELOG_VERSION exists but wasn't added in this PR"
+            fi
+          fi
+          echo ""
+          
+          # Check pyproject.toml version
+          if [ -f "pyproject.toml" ]; then
+            PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])" 2>/dev/null || \
+                                grep -oP '^version\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' pyproject.toml | head -n 1)
+            
+            if [ -z "$PYPROJECT_VERSION" ]; then
+              echo "❌ Could not find version in pyproject.toml"
+              ERRORS=$((ERRORS + 1))
+            else
+              echo "📦 pyproject.toml version: $PYPROJECT_VERSION"
+              
+              if [ "$PYPROJECT_VERSION" = "$CHANGELOG_VERSION" ]; then
+                echo "✅ pyproject.toml version matches CHANGELOG.md"
+              else
+                echo "❌ pyproject.toml version ($PYPROJECT_VERSION) does not match CHANGELOG.md ($CHANGELOG_VERSION)"
+                ERRORS=$((ERRORS + 1))
+              fi
+            fi
+          else
+            echo "⚠️  pyproject.toml not found"
+          fi
+          echo ""
+          
+          # Check README.md version badge
+          README_VERSION=$(grep -oP 'version-\K[0-9]+\.[0-9]+\.[0-9]+' README.md | head -n 1)
+          
+          if [ -z "$README_VERSION" ]; then
+            echo "❌ Could not find version badge in README.md"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "📖 README.md version: $README_VERSION"
+            
+            if [ "$README_VERSION" = "$CHANGELOG_VERSION" ]; then
+              echo "✅ README.md version matches CHANGELOG.md"
+            else
+              echo "❌ README.md version ($README_VERSION) does not match CHANGELOG.md ($CHANGELOG_VERSION)"
+              ERRORS=$((ERRORS + 1))
+            fi
+          fi
+          echo ""
+          
+          # Summary
+          if [ $ERRORS -eq 0 ]; then
+            echo "🎉 All version checks passed!"
+            exit 0
+          else
+            echo "💥 Found $ERRORS error(s)"
+            echo ""
+            echo "Please ensure:"
+            echo "  1. CHANGELOG.md is updated with a new version entry (## [X.Y.Z] - YYYY-MM-DD)"
+            echo "  2. pyproject.toml version matches the CHANGELOG version"
+            echo "  3. README.md version badge matches the CHANGELOG version"
+            exit 1
+          fi
