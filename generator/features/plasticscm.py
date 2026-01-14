@@ -1,13 +1,13 @@
 """This module defines the PlasticSCM-related features and configurations for Jenkins pipelines."""
 
-from abc import ABC
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
+
 from pydantic import BaseModel, Field, field_validator
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
 
-
 # More documentation at https://www.jenkins.io/doc/pipeline/steps/plasticscm-plugin/
+
 
 class RemoteConfig(BaseModel):
     """Configuration for remote used in PlasticSCM checkout operations."""
@@ -29,7 +29,6 @@ class CredentialsConfig(BaseModel):
         if working_mode != "NONE" and working_mode != "UP" and working_mode != "LDAP":
             raise ValueError(working_mode + " doesn't exit. Use NONE,UP or LDAP.")
         return working_mode
-
 
 
 class PlasticSCMCheckoutConfig(BaseModel):
@@ -58,9 +57,7 @@ class PlasticSCMCheckoutConfig(BaseModel):
         description="Enable or Disable 'Include in polling'.",
     )
 
-    remote_config: RemoteConfig = Field(
-        description="The remote configuration."
-    )
+    remote_config: RemoteConfig = Field(description="The remote configuration.")
 
     cleanup: Optional[str] = Field(
         default="STANDARD",
@@ -72,10 +69,7 @@ class PlasticSCMCheckoutConfig(BaseModel):
         description="The workspace subdirectory to clone the repo, required if you use multiple workspaces.",
     )
 
-    credentials_config: Optional[CredentialsConfig] = Field(
-        default=None,
-        description="The crendentials configuration."
-    )
+    credentials_config: Optional[CredentialsConfig] = Field(default=None, description="The crendentials configuration.")
 
     @field_validator("cleanup", mode="before")
     @classmethod
@@ -90,7 +84,6 @@ class PlasticSCMConfig(FeatureConfig):
     """Configuration model for the Plastic SCM properties."""
 
     checkout: PlasticSCMCheckoutConfig = Field(
-        default=None,
         description="The checkout configuration. If use_simple_checkout is true, this will be ignored.",
     )
 
@@ -103,5 +96,5 @@ class PlasticSCMFeature(BaseFeature):
     def should_include(self, config: Dict[str, Any]) -> bool:
         return "plasticscm" in config
 
-    def get_config_model(self) -> BaseModel:
+    def get_config_model(self) -> Type[FeatureConfig]:
         return PlasticSCMConfig

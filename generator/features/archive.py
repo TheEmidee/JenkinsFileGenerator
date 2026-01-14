@@ -10,10 +10,12 @@ Both actions have the same behavior:
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Type
+
 from pydantic import BaseModel, Field
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
+
 
 class SlackNotificationConfig(BaseModel):
     """Configuration model for Slack notifications."""
@@ -31,6 +33,7 @@ class SlackNotificationConfig(BaseModel):
         description="Template for the notification message",
     )
 
+
 class RotateArchivesConfig(BaseModel):
     """Configuration model for the action of rotating the archives.."""
 
@@ -38,9 +41,7 @@ class RotateArchivesConfig(BaseModel):
         default=False,
         description="Enable or disable the action of rotating the archives",
     )
-    directory_path: Path = (
-        Field(description="Path to the directory to rename with the current date"),
-    )
+    directory_path: Path = Field(description="Path to the directory to rename with the current date")
     keep_count: int = Field(
         default=10,
         description="Number of directories to keep in the parent folder after directory_path has been renamed",
@@ -54,6 +55,7 @@ class RotateArchivesConfig(BaseModel):
         description="Slack configuration",
     )
 
+
 class UploadArchivesConfig(BaseModel):
     """Configuration model for the action of uploading the archives."""
 
@@ -63,56 +65,31 @@ class UploadArchivesConfig(BaseModel):
     )
     local_folder: Optional[Path] = Field(
         default=None,
-        description="Path to the local folder containing the archives to upload. Optional. If you're using rotate_archives, jenkins will set the local folder path with the contents of output_file.",
+        description=(
+            "Path to the local folder containing the archives to upload. Optional. "
+            "If you're using rotate_archives, jenkins will set the local folder path with the contents of output_file."
+        ),
     )
-    bucket_name: str = Field(
-        default="",
-        description="Name of the S3 bucket to upload the archives to"
-    )
-    region: str = Field(
-        default="",
-        description="AWS region where the S3 bucket is located"
-    )
-    access_key: str = Field(
-        default="",
-        description="Access key for AWS S3 authentication"
-    )
-    secret_key: str = Field(
-        default="",
-        description="Secret key for AWS S3 authentication"
-    )
-    destination_folder: str = Field(
-        default="",
-        description="Destination folder in the S3 bucket where the archives will be uploaded"
-    )
-    keep_count: int = Field(
-        default=-1,
-        description="Number of archives to keep in the S3 bucket. If lower than 1, all archives will be kept.",
-    )
+    bucket_name: str = Field(default="", description="Name of the S3 bucket to upload the archives to")
+    region: str = Field(default="", description="AWS region where the S3 bucket is located")
+    access_key: str = Field(default="", description="Access key for AWS S3 authentication")
+    secret_key: str = Field(default="", description="Secret key for AWS S3 authentication")
+    destination_folder: str = Field(default="", description="Destination folder in the S3 bucket where the archives will be uploaded")
+    keep_count: int = Field(default=-1, description="Number of archives to keep in the S3 bucket. If lower than 1, all archives will be kept.")
     output_file_name: Optional[Path] = Field(
-        default=None,
-        description="Optional path to text file where the download URLs of uploaded archives will be written",
+        default=None, description="Optional path to text file where the download URLs of uploaded archives will be written"
     )
-    slack: Optional[SlackNotificationConfig] = Field(
-        default=None,
-        description="Slack configuration",
-    )
+    slack: Optional[SlackNotificationConfig] = Field(default=None, description="Slack configuration")
+
 
 class ArchiveConfig(FeatureConfig):
     """Configuration model for the Archive feature."""
 
     additional_node_name: Optional[str] = Field(
-        default=None,
-        description="Additional jenkins node tags to use if you want the archiving tasks to be executed on specific nodes.",
+        default=None, description="Additional jenkins node tags to use if you want the archiving tasks to be executed on specific nodes."
     )
-    rotate_archives: RotateArchivesConfig = Field(
-        default_factory=RotateArchivesConfig,
-        description="Configuration for rotating archives",
-    )
-    upload_archives: UploadArchivesConfig = Field(
-        default_factory=UploadArchivesConfig,
-        description="Configuration for uploading archives",
-    )
+    rotate_archives: RotateArchivesConfig = Field(description="Configuration for rotating archives")
+    upload_archives: UploadArchivesConfig = Field(description="Configuration for uploading archives")
 
 
 class ArchiveFeature(BaseFeature):
@@ -123,5 +100,5 @@ class ArchiveFeature(BaseFeature):
     def should_include(self, config: Dict[str, Any]) -> bool:
         return "archive" in config
 
-    def get_config_model(self) -> BaseModel:
+    def get_config_model(self) -> Type[FeatureConfig]:
         return ArchiveConfig

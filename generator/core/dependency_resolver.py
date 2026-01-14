@@ -13,17 +13,15 @@ class DependencyResolver:
     def resolve_dependencies(features: List[BaseFeature]) -> List[BaseFeature]:
         """Sort features based on their dependencies using topological sort."""
         # Create dependency graph
-        feature_map = {f.feature_name: f for f in features}
-        in_degree = {f.feature_name: 0 for f in features}
-        graph = {f.feature_name: [] for f in features}
+        feature_map: dict[str, BaseFeature] = {f.feature_name: f for f in features}
+        in_degree: dict[str, int] = {f.feature_name: 0 for f in features}
+        graph: dict[str, list[str]] = {f.feature_name: [] for f in features}
 
         # Build the graph
         for feature in features:
             for dep in feature.dependencies:
                 if dep not in feature_map:
-                    raise ValueError(
-                        f"Feature '{feature.feature_name}' depends on '{dep}', but '{dep}' is not available"
-                    )
+                    raise ValueError(f"Feature '{feature.feature_name}' depends on '{dep}', but '{dep}' is not available")
                 graph[dep].append(feature.feature_name)
                 in_degree[feature.feature_name] += 1
 
@@ -43,9 +41,7 @@ class DependencyResolver:
         # Check for circular dependencies
         if len(sorted_names) != len(features):
             remaining = [name for name, degree in in_degree.items() if degree > 0]
-            raise ValueError(
-                f"Circular dependency detected among features: {remaining}"
-            )
+            raise ValueError(f"Circular dependency detected among features: {remaining}")
 
         # Return features in dependency order
         return [feature_map[name] for name in sorted_names]

@@ -1,12 +1,12 @@
 """Utility for linting Jenkinsfiles using npm-groovy-lint."""
 
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 from generator import logger
 
 
-def lint_jenkinsfile(output_file: Path):
+def lint_jenkinsfile(output_file: Path) -> None:
     """Run npm-groovy-lint on the generated Jenkinsfile."""
     try:
         logger.info("Running npm-groovy-lint on %s", output_file)
@@ -22,7 +22,5 @@ def lint_jenkinsfile(output_file: Path):
         logger.error("Error output: %s", e.stderr)
         raise e
     except FileNotFoundError as e:
-        logger.error(
-            "npm-groovy-lint not found. Please ensure it's installed and in your PATH"
-        )
+        logger.error("npm-groovy-lint not found. Please ensure it's installed and in your PATH")
         raise e

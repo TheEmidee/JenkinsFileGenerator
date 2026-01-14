@@ -1,6 +1,7 @@
 """This module defines the GitHub-related features and configurations for Jenkins pipelines."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
+
 from pydantic import BaseModel, Field, field_validator
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
@@ -13,9 +14,7 @@ class GitHubPullRequestFilterConfig(BaseModel):
         default=None,
         description="List of tokens to ignore in pull requests, e.g., 'WIP', 'NO_CI'.",
     )
-    message: str = Field(
-        description="Custom message to display when a pull request is ignored due to the filter."
-    )
+    message: str = Field(description="Custom message to display when a pull request is ignored due to the filter.")
 
     @field_validator("tokens", mode="before")
     @classmethod
@@ -52,27 +51,16 @@ class GitHubConfig(FeatureConfig):
 
     owner: str = Field(description="The GitHub owner of the repository.")
     repository: str = Field(description="The GitHub repository name.")
-    credentials_id: str = Field(
-        description="The jenkins credentials id that is associated with the GITHUB_TOKEN."
-    )
-    pull_requests: Optional[GitHubPullRequestConfig] = Field(
-        default=None, description="Configuration for the pull requests"
-    )
+    credentials_id: str = Field(description="The jenkins credentials id that is associated with the GITHUB_TOKEN.")
+    pull_requests: Optional[GitHubPullRequestConfig] = Field(default=None, description="Configuration for the pull requests")
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, __context: Any) -> None:  # noqa: ANN401
         """Pydantic post-initialization."""
 
-        self._accumulator["update_job_description_from_pr"] = (
-            self.pull_requests.update_description_from_pr_body
-            if self.pull_requests
-            else False
-        )
-        self._accumulator["can_process_pull_request"] = bool(
-            self.pull_requests and self.pull_requests.filter
-        )
+        self._accumulator["update_job_description_from_pr"] = self.pull_requests.update_description_from_pr_body if self.pull_requests else False
+        self._accumulator["can_process_pull_request"] = bool(self.pull_requests and self.pull_requests.filter)
         self._accumulator["get_github_pr_infos"] = (
-            self._accumulator["update_job_description_from_pr"]
-            or self._accumulator["can_process_pull_request"]
+            self._accumulator["update_job_description_from_pr"] or self._accumulator["can_process_pull_request"]
         )
 
 
@@ -88,5 +76,5 @@ class GitHubFeature(BaseFeature):
     def dependencies(self) -> List[str]:
         return ["utils"]
 
-    def get_config_model(self) -> BaseModel:
+    def get_config_model(self) -> Type[FeatureConfig]:
         return GitHubConfig

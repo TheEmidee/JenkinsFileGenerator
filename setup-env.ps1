@@ -3,7 +3,7 @@
 
 param(
     [string]$VenvName = ".venv",
-    [string]$RequirementsFile = "requirements.txt",
+    [string]$PyProjectFile = "pyproject.toml",
     [switch]$Force
 )
 
@@ -19,8 +19,8 @@ try {
 }
 
 # Check if requirements.txt exists
-if (!(Test-Path $RequirementsFile)) {
-    Write-Host "Warning: $RequirementsFile not found in current directory" -ForegroundColor Yellow
+if (!(Test-Path $PyProjectFile)) {
+    Write-Host "Warning: $PyProjectFile not found in current directory" -ForegroundColor Yellow
     $response = Read-Host "Continue without installing requirements? (y/n)"
     if ($response -ne "y" -and $response -ne "Y") {
         exit 1
@@ -61,9 +61,9 @@ Write-Host "Upgrading pip..." -ForegroundColor Yellow
 python -m pip install --upgrade pip
 
 # Install requirements if file exists
-if (Test-Path $RequirementsFile) {
-    Write-Host "Installing packages from $RequirementsFile..." -ForegroundColor Yellow
-    pip install -r $RequirementsFile
+if (Test-Path $PyProjectFile) {
+    Write-Host "Installing packages from $PyProjectFile..." -ForegroundColor Yellow
+    pip install -e .[dev]
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "All packages installed successfully!" -ForegroundColor Green

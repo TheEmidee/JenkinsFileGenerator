@@ -5,10 +5,10 @@ The notifications can be simple text messages or rich block messages.
 """
 
 import json
-
 from abc import ABC
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional, Type
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
@@ -23,7 +23,7 @@ class SlackColor(str, Enum):
     BLUE = "#0000FF"
 
     @classmethod
-    def _missing_(cls, value):
+    def _missing_(cls, value: object) -> Any:  # noqa: ANN401
         # Allow custom hex colors
         if isinstance(value, str) and value.startswith("#"):
             return value
@@ -33,40 +33,30 @@ class SlackColor(str, Enum):
 class SlackNotificationMessageConfig(BaseModel, ABC):
     """Base configuration for Slack notification messages."""
 
-    enabled: Optional[bool] = Field(
-        default=None, description="Whether this notification type is enabled."
-    )
-    color: Optional[str] = Field(
-        default=None, description="Color for the notification in slack."
-    )
-    channel_override: str = Field(
-        default="", description="Channel override for this message."
-    )
+    enabled: Optional[bool] = Field(default=None, description="Whether this notification type is enabled.")
+    color: Optional[str] = Field(default=None, description="Color for the notification in slack.")
+    channel_override: str = Field(default="", description="Channel override for this message.")
 
     @field_validator("color", mode="before")
     @classmethod
-    def convert_color_to_string(cls, v):
+    def convert_color_to_string(cls, v: SlackColor) -> str:
         """Convert SlackColor enum to string value."""
         if isinstance(v, SlackColor):
             return v.value
-        return v
+        return str(v)
 
 
 class SlackNotificationSimpleMessageConfig(SlackNotificationMessageConfig):
     """Configuration for simple text message notifications."""
 
-    enabled: bool = Field(
-        default=True, description="Whether to send a simple text message."
-    )
+    enabled: bool = Field(default=True, description="Whether to send a simple text message.")
     message: str = Field(default="", description="The message to send.")
 
 
 class SlackNotificationBlocksMessageConfig(SlackNotificationMessageConfig):
     """Configuration for block message notifications."""
 
-    enabled: bool = Field(
-        default=False, description="Whether to send a blocks message."
-    )
+    enabled: bool = Field(default=False, description="Whether to send a blocks message.")
     blocks: str = Field(default="", description="The blocks to send.")
 
     @field_validator("blocks")
@@ -84,35 +74,35 @@ class SlackNotificationBlocksMessageConfig(SlackNotificationMessageConfig):
 class EventDefaults:
     """Centralized event defaults for better maintainability."""
 
-    PRE_BUILD = {
+    PRE_BUILD: ClassVar = {
         "message": "Build Started",
         "color": SlackColor.BLUE,
         "simple_enabled": True,
         "blocks_enabled": False,
     }
 
-    SUCCESS = {
+    SUCCESS: ClassVar = {
         "message": "Build Success",
         "color": SlackColor.GOOD,
         "simple_enabled": True,
         "blocks_enabled": False,
     }
 
-    FAILURE = {
+    FAILURE: ClassVar = {
         "message": "Build Failed",
         "color": SlackColor.DANGER,
         "simple_enabled": True,
         "blocks_enabled": False,
     }
 
-    UNSTABLE = {
+    UNSTABLE: ClassVar = {
         "message": "Build Unstable",
         "color": SlackColor.WARNING,
         "simple_enabled": True,
         "blocks_enabled": False,
     }
 
-    EXCEPTION = {
+    EXCEPTION: ClassVar = {
         "message": "Build Failed. Reason ${e}",
         "color": SlackColor.DANGER,
         "simple_enabled": True,
@@ -146,18 +136,12 @@ class SlackNotificationEventConfig(BaseModel, ABC):
         # Apply simple message defaults
         if self.simple_message.enabled is None:
             self.simple_message.enabled = defaults.get("simple_enabled", False)
-        if not self.simple_message.message and isinstance(
-            self.simple_message, SlackNotificationSimpleMessageConfig
-        ):
+        if not self.simple_message.message and isinstance(self.simple_message, SlackNotificationSimpleMessageConfig):
             self.simple_message.message = defaults.get("message", "")
         if self.simple_message.color is None:
             # Convert enum to string value when applying defaults
             default_color = defaults.get("color")
-            self.simple_message.color = (
-                default_color.value
-                if isinstance(default_color, SlackColor)
-                else default_color
-            )
+            self.simple_message.color = default_color.value if isinstance(default_color, SlackColor) else default_color
 
         # Apply blocks message defaults
         if self.blocks_message.enabled is None:
@@ -165,11 +149,7 @@ class SlackNotificationEventConfig(BaseModel, ABC):
         if self.blocks_message.color is None:
             # Convert enum to string value when applying defaults
             default_color = defaults.get("color")
-            self.blocks_message.color = (
-                default_color.value
-                if isinstance(default_color, SlackColor)
-                else default_color
-            )
+            self.blocks_message.color = default_color.value if isinstance(default_color, SlackColor) else default_color
 
         return self
 
@@ -212,12 +192,8 @@ class SlackNotificationOnExceptionEventConfig(SlackNotificationEventConfig):
 class SlackNotificationsConfig(FeatureConfig):
     """Configuration for Slack notifications."""
 
-    channel: str = Field(
-        description="The Slack channel or user to send notifications to. Must start with # for channels or @ for users."
-    )
-    message_template: str = Field(
-        description="Template for the message to be sent. Can include variables like env.BUILD_URL, env.JOB_NAME, etc."
-    )
+    channel: str = Field(description="The Slack channel or user to send notifications to. Must start with # for channels or @ for users.")
+    message_template: str = Field(description="Template for the message to be sent. Can include variables like env.BUILD_URL, env.JOB_NAME, etc.")
 
     # Event configurations with proper defaults
     pre_build_step: SlackNotificationPreBuildStepEventConfig = Field(
@@ -241,20 +217,16 @@ class SlackNotificationsConfig(FeatureConfig):
         description="Configuration for the notifications sent during the on-exception step phase.",
     )
 
-    webhook_credential_id: Optional[str] = Field(
-        default=None, description="The Jenkins credentials ID for the Slack webhook."
-    )
+    webhook_credential_id: Optional[str] = Field(default=None, description="The Jenkins credentials ID for the Slack webhook.")
 
     @field_validator("channel")
     @classmethod
-    def validate_channel(cls, v):
+    def validate_channel(cls, v: str) -> str:
         """Validate channel name format."""
         if not v:
             raise ValueError("Channel cannot be empty")
         if not (v.startswith("#") or v.startswith("@")):
-            raise ValueError(
-                "Channel must start with # (for channels) or @ (for users)"
-            )
+            raise ValueError("Channel must start with # (for channels) or @ (for users)")
         return v
 
     @model_validator(mode="after")
@@ -269,17 +241,14 @@ class SlackNotificationsConfig(FeatureConfig):
             self.on_exception,
         ]
 
-        has_enabled_notification = any(
-            event.simple_message.enabled or event.blocks_message.enabled
-            for event in events
-        )
+        has_enabled_notification = any(event.simple_message.enabled or event.blocks_message.enabled for event in events)
 
         if not has_enabled_notification:
             raise ValueError("At least one notification must be enabled")
 
         return self
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context: Any) -> None:  # noqa: ANN401
         """Post-initialization to set up accumulator values."""
         self._accumulator["generate_send_message"] = any(
             event.simple_message.enabled
@@ -316,5 +285,5 @@ class SlackNotificationsFeature(BaseFeature):
 
         return bool(slack_config.get("channel"))
 
-    def get_config_model(self) -> BaseModel:
+    def get_config_model(self) -> Type[FeatureConfig]:
         return SlackNotificationsConfig
