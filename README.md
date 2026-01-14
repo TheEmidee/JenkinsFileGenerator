@@ -1,8 +1,12 @@
 # JenkinsFileGenerator
 
-A Python module that generates Jenkins pipeline files from YAML configuration files using a modular feature-based approach. This tool allows you to define complex Jenkins pipelines through declarative configuration while maintaining flexibility and reusability.
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) 
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) 
+[![Version](https://img.shields.io/badge/version-1.5.0-green.svg)](CHANGELOG.md)
 
-## Overview
+---
+
+## Overview ✅
 
 JenkinsFileGenerator transforms YAML configuration files into complete Jenkins pipeline scripts (Jenkinsfiles) by combining multiple features such as Git checkout, GitHub integration, Slack notifications, Unreal Engine builds, and more. Each feature is implemented as a separate module with its own configuration schema and template, making the system highly extensible and maintainable.
 
