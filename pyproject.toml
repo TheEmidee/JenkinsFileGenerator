@@ -48,7 +48,10 @@ urls.Tracker = "https://github.com/TheEmidee/JenkinsfileGenerator/issues"
 [project.optional-dependencies]
 dev = [ 
   "ruff>=0.1.0",
-  "mypy>=1.10.0"
+  "mypy>=1.10.0",
+  "setuptools==80.8.0",
+  "build==1.4.0",
+  "wheel==0.45.1",
 ]
 
 [tool.ruff]
