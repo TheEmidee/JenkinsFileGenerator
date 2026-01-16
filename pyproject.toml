@@ -9,7 +9,7 @@ keywords = [
   "unreal engine",
   "unity"
 ]
-license = "MIT"
+license = {file = "LICENSE"}
 maintainers = [
   { name = "Michael Delva", email = "michael@emidee.net" },
 ]
@@ -77,3 +77,10 @@ convention = "google"
 python_version = "3.12"
 warn_return_any = true
 disallow_untyped_defs = true
+
+[build-system]
+requires = ["setuptools==69"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+jenkinsfilegenerator = "generator.main:main"
