@@ -38,8 +38,10 @@ pip install -e .[dev]
 
 ### Basic Command Line Usage
 
+Activating the virtual environment will create a script named jenkinsfilegenerator that you can use:
+
 ```bash
-python -m generator <config_file> [options]
+jenkinsfilegenerator <config_file> [options]
 ```
 
 ### Arguments
@@ -62,19 +64,19 @@ python -m generator <config_file> [options]
 
 ```bash
 # Basic generation
-python -m generator config.yaml -o Jenkinsfile
+jenkinsfilegenerator config.yaml -o Jenkinsfile
 
 # With linting
-python -m generator config.yaml -o Jenkinsfile --lint
+jenkinsfilegenerator config.yaml -o Jenkinsfile --lint
 
 # With the blackboard data
-python -m generator config.yaml -o Jenkinsfile --blackboarddata "build_type=Development,platform=Windows" --lint
+jenkinsfilegenerator config.yaml -o Jenkinsfile --blackboarddata "build_type=Development,platform=Windows" --lint
 
 # Use a batch file with linting
-python -m generator --batch batch.yaml --lint
+jenkinsfilegenerator --batch batch.yaml --lint
 
 # Generate documentation
-python -m generator config.yaml --generate_documentation
+jenkinsfilegenerator config.yaml --generate_documentation
 ```
 
 ## Blackboard data
