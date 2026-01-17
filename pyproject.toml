@@ -46,13 +46,18 @@ urls.Source = "https://github.com/TheEmidee/JenkinsfileGenerator"
 urls.Tracker = "https://github.com/TheEmidee/JenkinsfileGenerator/issues"
 
 [project.optional-dependencies]
-dev = [ 
+lint = [ 
   "ruff>=0.1.0",
-  "mypy>=1.10.0",
-  "setuptools==80.8.0",
+  "mypy>=1.10.0"
+]
+
+dist = [
+  "hatchling>=1.26",
   "build==1.4.0",
   "wheel==0.45.1",
 ]
+
+dev = ["JenkinsfileGenerator[lint, dist]"]
 
 [tool.ruff]
 line-length = 150
@@ -82,8 +87,28 @@ warn_return_any = true
 disallow_untyped_defs = true
 
 [build-system]
-requires = ["setuptools==69"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_package"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/LICENSE",
+]
+exclude = [
+    "/.git",
+    "/.github",
+    "/.pytest_cache",
+    "/__pycache__",
+]
 
 [project.scripts]
 jenkinsfilegenerator = "generator.main:main"
