@@ -1,6 +1,6 @@
 [project]
 name = "JenkinsfileGenerator"
-version = "1.5.0"
+version = "1.6.0"
 description = "Module that generates Jenkins pipeline files from YAML configuration files using a modular feature-based approach"
 readme.content-type = "text/markdown"
 readme.file = "README.md"
