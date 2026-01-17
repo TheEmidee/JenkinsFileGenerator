@@ -47,7 +47,7 @@ jobs:
           path: ./venv
           key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
       - name: Build wheel
-        run: ./venv/bin/python -m build --wheel
+        run: ./venv/bin/python -m pip wheel . --wheel-dir dist
       - name: Publish wheel
         uses: pypa/gh-action-pypi-publish@v1.8.10
         with:
