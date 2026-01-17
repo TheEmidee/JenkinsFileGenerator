@@ -55,6 +55,7 @@ dist = [
   "hatchling>=1.26",
   "build==1.4.0",
   "wheel==0.45.1",
+  "twine==6.2.0",
 ]
 
 dev = ["JenkinsfileGenerator[lint, dist]"]

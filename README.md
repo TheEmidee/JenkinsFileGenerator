@@ -1,8 +1,8 @@
 # JenkinsFileGenerator
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) 
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) 
-[![Version](https://img.shields.io/badge/version-1.5.0-green.svg)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) 
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/) 
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
 
 ---
 
@@ -399,6 +399,10 @@ generator/
 ### Code validation
 
 You can use `ruff` with `ruff check .` and `mypy` with `mypy .` to validate that the code is correct before submitting.
+
+### Code Formatting
+
+You can use `ruff format .` to automatically reformat the code.
 
 ## License
 
