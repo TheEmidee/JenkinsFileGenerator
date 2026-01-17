@@ -6,50 +6,46 @@ on:
       - publish_pypi
 
 jobs:
-  build-venv:
+  build:
+    name: Build distribution 📦
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      # Restore cached virtualenv, if available
-      # * The pyproject.toml hash is part of the cache key, invalidating
-      #   the cache if the file changes
-      - name: Restore cached virtualenv
-        id: restore-cache
-        uses: actions/cache/restore@v3
-        with:
-          path: ./venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
-      # If a previous cache wasn't restored (pyproject has changed), build the venv
-      # * Make the venv at `./venv` to ensure compatibility with runners
-      - name: Build venv
-        run: |
-          python -m venv ./venv
-          ./venv/bin/python -m pip install .[dist]
-        if: steps.restore-cache.outputs.cache-hit != 'true'
-      # Cache the built virtualenv for future runs
-      - name: Cache virtualenv
-        uses: actions/cache/save@v3
-        with:
-          path: ./venv
-          key: ${{ steps.restore-cache.outputs.cache-primary-key }}
-        if: steps.restore-cache.outputs.cache-hit != 'true'
 
-  publish-wheel:
-    runs-on: ubuntu-latest
-    needs: build-venv
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Restore cached virtualenv
-        uses: actions/cache/restore@v3
-        with:
-          path: ./venv
-          key: ${{ runner.os }}-venv-${{ hashFiles('**/pyproject.toml') }}
-      - name: Build wheel
-        run: ./venv/bin/python -m build --wheel
-      - name: Publish wheel
-        uses: pypa/gh-action-pypi-publish@v1.8.10
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.9"
+    - name: Install dependencies
+      run: |
+        pip install -e ".[dist]"
+    - name: Build a binary wheel and a source tarball
+      run: python3 -m build --wheel
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v5
+      with:
+        name: python-package-distributions
+        path: dist/
+
+  publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/JenkinsfileGenerator
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v6
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
