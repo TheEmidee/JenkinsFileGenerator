@@ -1,6 +1,6 @@
 [project]
 name = "JenkinsfileGenerator"
-version = "1.6.0"
+version = "1.6.1"
 description = "Module that generates Jenkins pipeline files from YAML configuration files using a modular feature-based approach"
 readme.content-type = "text/markdown"
 readme.file = "README.md"
@@ -40,6 +40,7 @@ dependencies = [
   "typing_extensions==4.14.0",
   "types-PyYAML==6.0.12"
 ]
+
 urls.Changelog = "https://github.com/TheEmidee/JenkinsfileGenerator/releases"
 urls.Homepage = "https://github.com/TheEmidee/JenkinsFileGenerator"
 urls.Source = "https://github.com/TheEmidee/JenkinsfileGenerator"
@@ -95,7 +96,7 @@ build-backend = "hatchling.build"
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/my_package"]
+packages = ["src/generator"]
 
 [tool.hatch.build.targets.sdist]
 include = [
