@@ -1,61 +1,46 @@
 """This feature works by using Buildgraph in an Unreal Engine project.
-It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts, which can be inside your game project or in a separate folder.
+It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts,
+which can be inside your game project or in a separate folder.
 
 In a nutshell, this is how this feature works:
-1. Before generating any text to output in the Jenkinsfile, this feature will run the module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties, as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
+1. Before generating any text to output in the Jenkinsfile, this feature will run the
+module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties,
+as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
 2. We then read the JSON file and create a graph of tasks.
 3. We use a topological sorting algorithm to group the tasks that can be executed in parallel, respecting the dependencies.
 4. Finally, we output in the jenkinsfile an array of those tasks, and the associated functions to execute those tasks in parallel.
 
 And this is how the tasks are executed by Jenkins:
-1. Each group of tasks is passed to the generated additional function `executeJobsInParallel`, which will call the function `runBuildGraph` for each task.
-2. This function uses the module `uepyscripts.tools.ci.buildgraph` from PyScripts. This module is a wrapper around the regular uepyscripts.run.buildgraph module.
+1. Each group of tasks is passed to the generated additional function `executeJobsInParallel`,
+which will call the function `runBuildGraph` for each task.
+2. This function uses the module `uepyscripts.tools.ci.buildgraph` from PyScripts.
+This module is a wrapper around the regular uepyscripts.run.buildgraph module.
 3. This module will execute BuildGraph with the target and properties, as expected, but will pass 4 extra arguments:
 * -BuildMachine
 * -SharedStorageDir="\\\\path\\to\\shared\\dir'
 * -WriteToSharedStorage,
 * -SingleNode="task_name"
-Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument, and will write the results to the shared storage directory.
-4. If later down the pipeline a task needs to read the results of a previous task, it will read them from the shared storage directory.
-5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering the disk with old results, and to make sure that there are no artifacts left from previous jobs.
+Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument,
+and will write the results to the shared storage directory.
+4. If later down the pipeline a task needs to read the results of a previous task,
+it will read them from the shared storage directory.
+5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering
+the disk with old results, and to make sure that there are no artifacts left from previous jobs.
 """
 
 import importlib
-import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, ValidationInfo, model_validator
-from mako.template import Template
+from typing import Any, Dict, List, Optional, Type, cast
+
+from mako.template import Template  # type: ignore[import-untyped]
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from generator import logger
 from generator.core.base_feature import BaseFeature, FeatureConfig
 from generator.core.template_context import TemplateContext
 from generator.utils.graph import Graph
-
-TEMPLATE = """
-    def buildgraph_job_groups = [
-% for platform_name,platform in ctx.platforms.items():
-    % for group_names in platform.parallel_groups:
-        [
-        % for group_name in group_names:
-            [
-                "${group_name}": [
-                    tasks: [ ${", ".join(f'"{node.name}"' for node in platform.groups[group_name].nodes)} ],
-                    platform: "${platform_name}"
-                ],
-            ],
-        % endfor
-        ],
-    % endfor
-% endfor
-    ]
-
-    buildgraph_job_groups.each { group ->
-        executeJobsInParallel(group)
-    }
-"""
 
 
 class UnrealBuildGraphConfig(BaseModel):
@@ -64,15 +49,18 @@ class UnrealBuildGraphConfig(BaseModel):
     target: str = Field(description="The target to build with Build Graph.")
     node_name_filters: Optional[Dict[str, str]] = Field(
         default=None,
-        description="Filters to apply to the node names. Keys are the buildgraph task names and values are the jenkins node filter (Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine without a GPU to run the BootTest task).",
+        description=(
+            "Filters to apply to the node names. Keys are the buildgraph task names and values are the jenkins node filter."
+            "(Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine with no GPU to run the BootTest)"
+        ),
     )
     properties: Optional[Dict[str, str]] = Field(
         default=None,
-        description="Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments to UAT.",
+        description="Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments.",
     )
     pre_tasks: Optional[List[str]] = Field(
         default=None,
-        description="List of powershell tasks to run before the buildgraph tasks. They will be executed in a pwsh '''task''' block",
+        description="List of tasks to run before the buildgraph tasks.",
     )
 
 
@@ -85,24 +73,22 @@ class UnrealCleanupConfig(BaseModel):
     )
     additional_node_name: Optional[str] = Field(
         default=None,
-        description="Additional jenkins node tags to use if you want the cleanup tasks to be executed on specific nodes.",
+        description="Additional node tags to use if you want the cleanup tasks to be executed on specific nodes.",
     )
 
 
 class UnrealProjectConfig(BaseModel):
     """Configuration model for the project section of Unreal."""
 
-    uproject_path: Path = Field(
-        description="The path to the .uproject file of the Unreal project."
-    )
+    uproject_path: Path = Field(description="The path to the .uproject file of the Unreal project.")
     pyscripts_folder: str = Field(
-        default_factory=lambda: None,
+        default_factory=lambda: "",
         description="Path to the PyScripts folder if it's not at the root of the uproject",
     )
 
     def get_absolute_pyscripts_folder_path(self) -> Path:
         """Get the absolute path to the uproject file."""
-        return ( self.uproject_path.parent / self.pyscripts_folder ).resolve()
+        return (self.uproject_path.parent / self.pyscripts_folder).resolve()
 
     # Done like this to make it optional in the config file
     # but will try to be set to a relative path from the uproject_path
@@ -111,21 +97,17 @@ class UnrealProjectConfig(BaseModel):
     def validate_model(self, info: ValidationInfo) -> "UnrealProjectConfig":
         """Validation of the project config model
         and try to resolve paths to the uproject file and pyscripts folder."""
-        if not self.uproject_path.is_absolute():
-            config_file_path = (
-                info.context.get("config_file_path") if info.context else None
-            )
+        if not info.context or not info.context.config_file_path:
+            raise ValueError("A context with a config_file_path is required")
 
-            if config_file_path:
-                # Resolve relative to config file directory
-                config_dir = Path(config_file_path).parent
-                self.uproject_path = (config_dir / self.uproject_path).resolve()
-                logger.debug(
-                    "Resolved uproject_path relative to config file: %s",
-                    self.uproject_path,
-                )
-            else:
-                return None
+        if not self.uproject_path.is_absolute():
+            # Resolve relative to config file directory
+            config_dir = Path(info.context.config_file_path).parent
+            self.uproject_path = (config_dir / self.uproject_path).resolve()
+            logger.debug(
+                "Resolved uproject_path relative to config file: %s",
+                self.uproject_path,
+            )
 
         if not self.uproject_path.is_file():
             raise ValueError("uproject_path does not point to a valid file")
@@ -138,9 +120,7 @@ class UnrealProjectConfig(BaseModel):
 
         uproject_path = self.uproject_path
         if uproject_path is None:
-            raise ValueError(
-                "uproject_path must be validated before pyscripts_folder"
-            )
+            raise ValueError("uproject_path must be validated before pyscripts_folder")
 
         absolute_pyscripts_folder = self.get_absolute_pyscripts_folder_path()
 
@@ -154,15 +134,9 @@ class UnrealProjectConfig(BaseModel):
 class UnrealConfig(FeatureConfig):
     """Configuration model for the unreal feature."""
 
-    project: UnrealProjectConfig = Field(
-        description="The Unreal project configuration."
-    )
-    buildgraph: UnrealBuildGraphConfig = Field(
-        description="The buildgraph configuration."
-    )
-    cleanup_after_build: Optional[UnrealCleanupConfig] = Field(
-        default=None, description="Options to run post-buildgraph cleanup tasks."
-    )
+    project: UnrealProjectConfig = Field(description="The Unreal project configuration.")
+    buildgraph: UnrealBuildGraphConfig = Field(description="The buildgraph configuration.")
+    cleanup_after_build: Optional[UnrealCleanupConfig] = Field(default=None, description="Options to run post-buildgraph cleanup tasks.")
 
 
 class UnrealFeature(BaseFeature):
@@ -173,18 +147,26 @@ class UnrealFeature(BaseFeature):
     def should_include(self, config: Dict[str, Any]) -> bool:
         return "unreal" in config
 
-    def get_config_model(self) -> BaseModel:
+    def get_config_model(self) -> Type[FeatureConfig]:
         return UnrealConfig
 
     @property
     def dependencies(self) -> List[str]:
         return ["utils"]
 
-    def render_block(self, block_type: str, context: TemplateContext, template) -> str:
+    def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs, buildgraph_properties = self.get_jenkins_jobs(context.feature_config)
+            jenkins_jobs = self.get_jenkins_jobs(cast(UnrealConfig, context.feature_config))
             context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
-            context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
+
+            unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
+            inlined_properties: str = 'def buildgraph_properties = """\n'
+            if unreal_config.buildgraph.properties is not None:
+                lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
+                inlined_properties += "\n".join(lines)
+            inlined_properties += '\n""".stripIndent().trim()'
+
+            context.feature_config._accumulator["buildgraph_properties"] = inlined_properties
 
         return super().render_block(block_type, context, template)
 
@@ -206,97 +188,138 @@ class UnrealFeature(BaseFeature):
 
         extra_parameters = [f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
 
-        uepyscripts.run(
-            config.buildgraph.target, config.buildgraph.properties, extra_parameters
-        )
+        uepyscripts.run(config.buildgraph.target, config.buildgraph.properties, extra_parameters)
 
-        def read_json(path: Path) -> Any:
-            with open(path, encoding="utf-8") as f:
-                return json.load(f)
+        class UnrealBuildgraphJsonOutput_Notify(BaseModel):
+            """Notification configuration for a node."""
 
-        json_nodes = read_json(export_path)
+            default: str = Field(alias="Default")
+            submitters: str = Field(alias="Submitters")
+            warnings: bool = Field(alias="Warnings")
 
-        class BuildNode:
-            """Represents a node in the graph of tasks."""
+            class Config:
+                populate_by_name = True
 
-            def __init__(self, json_node):
-                self.name = json_node["Name"]
-                self.depends_on: list[str] = []
+        class UnrealBuildgraphJsonOutput_Node(BaseModel):
+            """Represents a build node within a group."""
 
-                depends_on = json_node["DependsOn"]
-                if depends_on:
-                    self.depends_on = depends_on.split(";")
+            name: str = Field(alias="Name")
+            depends_on: list[str] = Field(alias="DependsOn")
+            run_early: bool = Field(alias="RunEarly")
+            notify: UnrealBuildgraphJsonOutput_Notify = Field(alias="Notify")
 
-        class BuildGroup:
-            """Represents a group of tasks in the build graph."""
+            @field_validator("depends_on", mode="before")
+            @classmethod
+            def split_depends_on(cls, v: str) -> list[str]:
+                """Convert semicolon-separated string to list."""
+                if isinstance(v, str):
+                    # Split by semicolon and filter out empty strings
+                    return [dep.strip() for dep in v.split(";") if dep.strip()]
+                return v
 
-            def __init__(self, json_node):
-                self.name = json_node["Name"]
-                self.nodes = []
-                for node in json_node["Nodes"]:
-                    self.nodes.append(BuildNode(node))
+            class Config:
+                populate_by_name = True
 
-        class BuildPlatform:
-            """Represents a list of groups for a given platform."""
+        class UnrealBuildgraphJsonOutput_Group(BaseModel):
+            """Represents a build group containing nodes."""
 
-            def __init__(self, name: str):
-                self.name = name
-                self.job_to_group: dict[str, str] = {}
-                self.groups: dict[str, BuildGroup] = {}
-                self.parallel_groups: list[list[str]] = []
+            name: str = Field(alias="Name")
+            agent_types: List[str] = Field(alias="Agent Types")
+            nodes: List[UnrealBuildgraphJsonOutput_Node] = Field(alias="Nodes")
 
-            def parse_group(self, json_node):
-                """Parse a group from the JSON node to associate a node to a group."""
-                group = BuildGroup(json_node)
-                self.groups.update({group.name: group})
+            class Config:
+                populate_by_name = True
 
-                for node in group.nodes:
-                    self.job_to_group.update({node.name: group.name})
+        class UnrealBuildgraphJsonOutput_BuildAgent(BaseModel):
+            """Represents a build agent with its associated groups."""
 
-            def build_parallel_groups(self):
-                """Build a list of tasks that can be executed in parallel."""
-                g = Graph()
+            agent_type: str
+            groups: Dict[str, UnrealBuildgraphJsonOutput_Group]
+            parallel_groups: List[List[str]] = Field(default_factory=list, exclude=True)
+
+            class Config:
+                arbitrary_types_allowed = True
+
+            @model_validator(mode="after")
+            def create_parallel_groups(self) -> "UnrealBuildgraphJsonOutput_BuildAgent":
+                job_to_group: dict[str, str] = {}
 
                 for group in self.groups.values():
                     for node in group.nodes:
+                        job_to_group.update({node.name: group.name})
+
+                g = Graph()
+
+                for group_name, group in self.groups.items():
+                    for node in group.nodes:
                         for dependency in node.depends_on:
-                            required_group_name = self.job_to_group[dependency]
-                            if required_group_name != group.name:
-                                g.add_edge(group.name, required_group_name)
+                            required_group_name = job_to_group[dependency]
+                            if required_group_name != group_name:
+                                g.add_edge(group_name, required_group_name)
 
                 self.parallel_groups = g.topological_sort_with_hierarchy()
 
-        class BuildContext:
-            """Context for rendering the build graph template."""
+                return self
 
-            def __init__(
-                self, json_nodes: Any, buildgraph_properties: dict[str, str] = None
-            ):
-                self.inlined_properties: str = 'def buildgraph_properties = """\n'
-                self.platforms: dict[str, BuildPlatform] = {}
+        class UnrealBuildgraphJsonOutput_BuildConfiguration(BaseModel):
+            """Root configuration for the build system."""
 
-                if buildgraph_properties is not None:
-                    lines = [f"-set:{key}={value}" for key, value in buildgraph_properties.items()]
-                    self.inlined_properties += "\n".join(lines)
-                
-                self.inlined_properties += '\n""".stripIndent().trim()'
+            groups: List[UnrealBuildgraphJsonOutput_Group] = Field(alias="Groups")
+            badges: List = Field(alias="Badges")
+            reports: List = Field(alias="Reports")
+            build_agents: Dict[str, UnrealBuildgraphJsonOutput_BuildAgent] = Field(default_factory=dict, exclude=True)
 
-                for group in json_nodes["Groups"]:
-                    platform_name = group["Agent Types"][0]
+            class Config:
+                populate_by_name = True
 
-                    build_platform: BuildPlatform = None
-                    if platform_name not in self.platforms:
-                        build_platform = BuildPlatform(platform_name)
-                        self.platforms[platform_name] = build_platform
-                    else:
-                        build_platform = self.platforms[platform_name]
+            @model_validator(mode="after")
+            def create_build_agents(self) -> "UnrealBuildgraphJsonOutput_BuildConfiguration":
+                """Create BuildAgent objects by grouping Groups by their agent types."""
+                agent_map: Dict[str, Dict[str, UnrealBuildgraphJsonOutput_Group]] = {}
 
-                    build_platform.parse_group(group)
+                for group in self.groups:
+                    for agent_type in group.agent_types:
+                        if agent_type not in agent_map:
+                            agent_map[agent_type] = {}
+                        agent_map[agent_type][group.name] = group
 
-                for platform in self.platforms.values():
-                    platform.build_parallel_groups()
+                self.build_agents = {
+                    agent_type: UnrealBuildgraphJsonOutput_BuildAgent(agent_type=agent_type, groups=groups)
+                    for agent_type, groups in agent_map.items()
+                }
 
-        build_context = BuildContext(json_nodes, config.buildgraph.properties)
+                return self
+
+            @staticmethod
+            def create_from_path(path: Path) -> "UnrealBuildgraphJsonOutput_BuildConfiguration":
+                with open(path, encoding="utf-8") as f:
+                    json_str = f.read()
+                    return UnrealBuildgraphJsonOutput_BuildConfiguration.model_validate_json(json_str)
+
+        build_configuration = UnrealBuildgraphJsonOutput_BuildConfiguration.create_from_path(export_path)
+
+        TEMPLATE = """
+    def buildgraph_job_groups = [
+% for build_agent_platform,build_agent in ctx.build_agents.items():
+    % for group in build_agent.parallel_groups:
+        [
+        % for group_name in group:
+            [
+                "${group_name}": [
+                    tasks: [ ${", ".join(f'"{node.name}"' for node in build_agent.groups[group_name].nodes)} ],
+                    platform: "${build_agent_platform}"
+                ],
+            ],
+        % endfor
+        ],
+    % endfor
+% endfor
+    ]
+
+    buildgraph_job_groups.each { group ->
+        executeJobsInParallel(group)
+    }
+"""
 
         jobs_template = Template(TEMPLATE)
-        return jobs_template.render(ctx=build_context), build_context.inlined_properties
+        return str(jobs_template.render(ctx=build_configuration))

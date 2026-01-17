@@ -6,11 +6,11 @@ from collections import defaultdict, deque
 class Graph:
     """A simple directed graph implementation for topological sorting."""
 
-    def __init__(self):
-        self.graph = defaultdict(list)
-        self.nodes = set()
+    def __init__(self) -> None:
+        self.graph: dict[str, list[str]] = defaultdict(list)
+        self.nodes: set[str] = set()
 
-    def add_edge(self, u, v):
+    def add_edge(self, u: str, v: str) -> None:
         """Add a directed edge from node u to node v."""
         self.graph[u].append(v)
         self.nodes.add(u)
@@ -44,14 +44,8 @@ class Graph:
         in_degree = self.calculate_in_degree()
 
         # Then remove the nodes and their degrees if they don't have any dependency
-        self.nodes = [
-            item for item in self.nodes if item not in nodes_with_no_dependencies
-        ]
-        in_degree = {
-            key: value
-            for key, value in in_degree.items()
-            if key not in nodes_with_no_dependencies
-        }
+        self.nodes = {item for item in self.nodes if item not in nodes_with_no_dependencies}
+        in_degree = {key: value for key, value in in_degree.items() if key not in nodes_with_no_dependencies}
 
         queue = deque([node for node in in_degree if in_degree[node] == 0])
         sorted_hierarchy = []
@@ -73,7 +67,7 @@ class Graph:
             sorted_hierarchy.append(current_level_nodes)
 
         if sum(len(level) for level in sorted_hierarchy) != len(self.nodes):
-            return None  # Graph contains a cycle
+            return list[list[str]]()  # Graph contains a cycle
 
         sorted_hierarchy.append(nodes_with_no_dependencies)
         sorted_hierarchy.reverse()

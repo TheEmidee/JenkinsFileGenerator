@@ -2,29 +2,21 @@
 
 import re
 from pathlib import Path
-from dataclasses import dataclass
-from mako.template import Template
-from mako.exceptions import CompileException, SyntaxException
-from mako.lookup import TemplateLookup
+
+from mako.exceptions import CompileException, SyntaxException  # type: ignore[import-untyped]
+from mako.lookup import TemplateLookup  # type: ignore[import-untyped]
+from mako.template import Template  # type: ignore[import-untyped]
 
 from generator import logger
 from generator.core import constants
-from generator.utils.validation.base_validator import BaseValidator, ValidationMessage
 from generator.core.feature_registry import FeatureRegistry
-
-
-@dataclass
-class TemplateValidationMessage(ValidationMessage):
-    """Extended validation message for template-specific context"""
-
-    def get_context_output_name(self) -> str:
-        return "Context"
+from generator.utils.validation.base_validator import BaseValidator
 
 
 class TemplateValidator(BaseValidator):
     """Validates Mako template syntax and usage"""
 
-    def __init__(self, config_path: Path):
+    def __init__(self, config_path: Path) -> None:
         super().__init__()
         self.templates_dir = constants.TEMPLATES_FOLDER
         self.template_lookup = TemplateLookup(directories=[str(self.templates_dir)])
@@ -33,7 +25,7 @@ class TemplateValidator(BaseValidator):
     def _get_validation_identifier(self) -> str:
         return "Template"
 
-    def _validate_internal(self):
+    def _validate_internal(self) -> None:
         template_files = list(self.templates_dir.glob("*.mako"))
 
         if not template_files:
@@ -51,7 +43,7 @@ class TemplateValidator(BaseValidator):
         # Validate template relationships
         self._validate_template_relationships()
 
-    def _validate_template_file(self, template_path: Path):
+    def _validate_template_file(self, template_path: Path) -> None:
         """Validate a single template file"""
         logger.debug("Validating template: %s", template_path)
 
@@ -67,11 +59,11 @@ class TemplateValidator(BaseValidator):
         except Exception as e:
             self._add_message(
                 "error",
-                f"Failed to validate template: {str(e)}",
-                file_path=str(template_path),
+                f"Failed to validate template: {e!s}",
+                file_path=template_path,
             )
 
-    def _validate_basic_syntax(self, template_path: Path, content: str):
+    def _validate_basic_syntax(self, template_path: Path, content: str) -> None:
         """Check for basic syntax issues"""
         lines = content.split("\n")
 
@@ -85,7 +77,7 @@ class TemplateValidator(BaseValidator):
                         self._add_message(
                             "error",
                             "Unclosed Mako expression",
-                            file_path=str(template_path),
+                            file_path=template_path,
                             line_number=i,
                             context=line.strip(),
                             suggestion="Ensure all ${...} expressions are properly closed",
@@ -93,11 +85,9 @@ class TemplateValidator(BaseValidator):
 
             # Check for unmatched % blocks
             if line.strip().startswith("%"):
-                if (
-                    line.strip().startswith("% if")
-                    and "endif" not in content[content.find(line) :]
-                ):
-                    # This is a simplified check - more sophisticated logic needed for real validation
+                if line.strip().startswith("% if") and "endif" not in content[content.find(line) :]:
+                    # This is a simplified check
+                    # more sophisticated logic needed for real validation
                     pass
 
             # Check for common typos in def blocks
@@ -109,13 +99,13 @@ class TemplateValidator(BaseValidator):
                     self._add_message(
                         "warning",
                         f"Block name case mismatch: '{def_name}' should be lowercase",
-                        file_path=str(template_path),
+                        file_path=template_path,
                         line_number=i,
                         context=line.strip(),
                         suggestion=f'Use <%def name="{def_name.lower()}"> instead',
                     )
 
-    def _validate_mako_compilation(self, template_path: Path, content: str):
+    def _validate_mako_compilation(self, template_path: Path, content: str) -> None:
         """Validate that Mako can compile the template"""
         try:
             Template(content, filename=str(template_path))
@@ -126,8 +116,8 @@ class TemplateValidator(BaseValidator):
             except Exception as e:
                 self._add_message(
                     "warning",
-                    f"Template lookup failed: {str(e)}",
-                    file_path=str(template_path),
+                    f"Template lookup failed: {e!s}",
+                    file_path=template_path,
                     suggestion="Check for missing template dependencies or includes",
                 )
 
@@ -137,19 +127,19 @@ class TemplateValidator(BaseValidator):
 
             self._add_message(
                 "error",
-                f"Mako compilation error: {str(e)}",
-                file_path=str(template_path),
+                f"Mako compilation error: {e!s}",
+                file_path=template_path,
                 line_number=line_number,
                 suggestion="Fix the Mako syntax error",
             )
         except Exception as e:
             self._add_message(
                 "error",
-                f"Template compilation failed: {str(e)}",
-                file_path=str(template_path),
+                f"Template compilation failed: {e!s}",
+                file_path=template_path,
             )
 
-    def _validate_template_structure(self, template_path: Path, content: str):
+    def _validate_template_structure(self, template_path: Path, content: str) -> None:
         """Validate template structure and def blocks"""
         # Find all def blocks
         def_blocks = re.findall(r'<%def\s+name="([^"]+)"[^>]*>', content)
@@ -160,7 +150,7 @@ class TemplateValidator(BaseValidator):
         #         self._add_message(
         #             'warning',
         #             f"Unknown template block: '{block_name}'",
-        #             file_path=str(template_path),
+        #             file_path=template_path,
         #             suggestion=f"Standard blocks are: {', '.join(sorted(self.STANDARD_BLOCKS))}"
         #         )
 
@@ -171,7 +161,7 @@ class TemplateValidator(BaseValidator):
                 self._add_message(
                     "error",
                     f"Duplicate template block: '{block_name}'",
-                    file_path=str(template_path),
+                    file_path=template_path,
                     suggestion="Each block should be defined only once per template",
                 )
             seen_blocks.add(block_name)
@@ -181,11 +171,11 @@ class TemplateValidator(BaseValidator):
             self._add_message(
                 "error",
                 "Mismatched <%def> and </%def> tags",
-                file_path=str(template_path),
+                file_path=template_path,
                 suggestion="Ensure every <%def> has a corresponding </%def>",
             )
 
-    def _validate_template_relationships(self):
+    def _validate_template_relationships(self) -> None:
         """Validate relationships between templates"""
         # Check base template exists
         base_template = self.templates_dir / "base_jenkinsfile.mako"
@@ -193,7 +183,7 @@ class TemplateValidator(BaseValidator):
             self._add_message(
                 "error",
                 "Base template not found",
-                file_path=str(base_template),
+                file_path=base_template,
                 suggestion="Create base_jenkinsfile.mako as the main template",
             )
             return
@@ -208,6 +198,6 @@ class TemplateValidator(BaseValidator):
                 self._add_message(
                     "warning",
                     f"No template found for feature '{feature_name}'",
-                    file_path=str(template_path),
+                    file_path=template_path,
                     suggestion=f"Create {template_path} or the feature won't generate any code",
                 )

@@ -1,7 +1,6 @@
 """Constants for the Jenkinsfile generator."""
 
 import os
-
 from pathlib import Path
 
 MAKO_BLOCKS = [

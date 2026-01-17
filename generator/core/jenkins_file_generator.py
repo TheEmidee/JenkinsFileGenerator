@@ -1,39 +1,37 @@
 """The main entry point for generating a Jenkinsfile from a configuration file."""
 
+import re
 from pathlib import Path
 from typing import Any, Dict, List
-from mako.lookup import TemplateLookup
 
-import re
 import yaml
+from mako.lookup import TemplateLookup  # type: ignore[import-untyped]
 
 from generator import logger
 from generator.core import constants
-
-from generator.core.template_context import TemplateContext
-from generator.core.pipeline_config import PipelineConfig
-from generator.core.generated_blocks import GeneratedBlocks
 from generator.core.base_feature import BaseFeature
 from generator.core.dependency_resolver import DependencyResolver
 from generator.core.feature_registry import FeatureRegistry
+from generator.core.generated_blocks import GeneratedBlocks
+from generator.core.pipeline_config import PipelineConfig
+from generator.core.template_context import TemplateContext
+from generator.core.validation_context import ConfigValidationContext
 
 
 class JenkinsfileGenerator:
     """Main generator class that orchestrates the entire process."""
 
-    def __init__(self):
-        self.templates_dir = constants.TEMPLATES_FOLDER
-        self.base_template_path = "base_jenkinsfile.mako"
-        self.template_lookup = None
+    def __init__(self) -> None:
+        self.templates_dir: Path = constants.TEMPLATES_FOLDER
+        self.base_template_path: str = "base_jenkinsfile.mako"
+        self.template_lookup: TemplateLookup = None
 
-    def __create_template_lookup(self, config: PipelineConfig):
-        directories=[
-            str(self.templates_dir)
-            ]
-        
+    def __create_template_lookup(self, config: PipelineConfig) -> None:
+        directories = [str(self.templates_dir)]
+
         if config.customization_folder is not None:
-            directories.insert(0,str(config.customization_folder))
-            
+            directories.insert(0, str(config.customization_folder))
+
         self.template_lookup = TemplateLookup(directories=directories)
 
     def generate_jenkinsfile(self, config_path: Path, output_path: Path, blackboard_data: str = "") -> None:
@@ -41,7 +39,7 @@ class JenkinsfileGenerator:
 
         config = self.__load_config(config_path, blackboard_data)
         self.__create_template_lookup(config)
-        
+
         selected_features = self.__select_features(config)
         logger.info(
             "Selected %s features: %s",
@@ -57,19 +55,18 @@ class JenkinsfileGenerator:
 
         all_blocks = GeneratedBlocks()
         global_values = {
-            "generator_version": "1.0.0", 
-            "output_feature_sections": False, 
+            "generator_version": "1.0.0",
+            "output_feature_sections": False,
             "source_yaml_file": config_path,
             "blackboard_data": blackboard_data,
-            "customization" : {
-                file.stem: file.name
-                for file in Path(config.customization_folder).rglob("*.mako")
-            }
+            "customization": {file.stem: file.name for file in config.customization_folder.rglob("*.mako")}
+            if config.customization_folder is not None
+            else {},
         }
 
+        validation_context = ConfigValidationContext(config_path)
         for feature in ordered_features:
             try:
-                validation_context = {"config_file_path": config_path}
                 feature_config = feature.get_feature_config(config, validation_context)
                 context = TemplateContext(
                     full_config=config,
@@ -82,38 +79,34 @@ class JenkinsfileGenerator:
                 all_blocks.merge_with(blocks)
 
             except Exception as e:
-                raise RuntimeError(
-                    f"Failed to process feature '{feature.feature_name}': {e}"
-                ) from e
+                raise RuntimeError(f"Failed to process feature '{feature.feature_name}': {e}") from e
 
         self.__render_final_jenkinsfile(all_blocks, config, global_values, output_path)
 
-    def __load_config(self, config_path: str, blackboard_data: str = "") -> PipelineConfig:
+    def __load_config(self, config_path: Path, blackboard_data: str = "") -> PipelineConfig:
         """Load and parse YAML configuration file."""
         try:
             with open(config_path, "r", encoding="utf-8") as f:
                 yaml_str = f.read()
 
-            if blackboard_data != '':
-                blackboard_data_dict: dict[str, str] = dict(item.split('=') for item in blackboard_data.split(','))
+            if blackboard_data != "":
+                blackboard_data_dict: dict[str, str] = dict(item.split("=") for item in blackboard_data.split(","))
 
                 for key, value in blackboard_data_dict.items():
                     logger.info(
                         "Replace blackboard data key %s by %s",
-                        key, value,
+                        key,
+                        value,
                     )
                     placeholder = f"^BLACKBOARD_DATA.{key}^"
                     yaml_str = yaml_str.replace(placeholder, value)
 
-                remaining_tokens = re.findall(r'\^BLACKBOARD_DATA\.[^\^]+\^', yaml_str)
+                remaining_tokens = re.findall(r"\^BLACKBOARD_DATA\.[^\^]+\^", yaml_str)
                 if remaining_tokens:
                     raise ValueError(f"Unresolved BLACKBOARD_DATA tokens in config: {remaining_tokens}")
 
             yaml_contents = yaml.safe_load(yaml_str)
-            validation_context = {"config_file_path": config_path}
-            return PipelineConfig.model_validate(
-                yaml_contents, context=validation_context
-            )
+            return PipelineConfig.model_validate(yaml_contents, context=ConfigValidationContext(config_path))
         except Exception as e:
             raise ValueError(f"Failed to load config file '{config_path}': {e}") from e
 
@@ -135,18 +128,16 @@ class JenkinsfileGenerator:
         blocks: GeneratedBlocks,
         config: PipelineConfig,
         global_values: Dict[str, Any],
-        output_path: str,
+        output_path: Path,
     ) -> None:
         """Render the final Jenkinsfile using the base template."""
         try:
             base_template = self.template_lookup.get_template(self.base_template_path)
         except Exception as e:
-            raise FileNotFoundError(
-                f"Base template not found: {self.base_template_path}"
-            ) from e
+            raise FileNotFoundError(f"Base template not found: {self.base_template_path}") from e
 
         try:
-            d = {k: "\n".join(v or []) for k, v in blocks.blocks.items()}
+            d: Dict[str, Any] = {k: "\n".join(v or []) for k, v in blocks.blocks.items()}
 
             # for k, v in global_values.items():
             #     d.update( { k: v } )
@@ -154,9 +145,7 @@ class JenkinsfileGenerator:
             d.update({"global_values": global_values})
             d.update({"full_config": config})
 
-            rendered = (
-                base_template.render_unicode(**d).strip().encode("utf-8", "replace")
-            )
+            rendered = base_template.render_unicode(**d).strip().encode("utf-8", "replace")
 
         except Exception as e:
             raise RuntimeError(f"Failed to render base template: {e}") from e

@@ -1,11 +1,11 @@
 """Base Validator Module
 This module defines the base validator class for validating configurations."""
 
+import traceback
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-import traceback
-from typing import List, Optional
+from typing import Optional
 
 from colorama import Fore, Style, init
 
@@ -18,13 +18,13 @@ class ValidationMessage:
 
     level: str  # 'error', 'warning', 'info'
     message: str
-    file_path: Optional[str] = None
+    file_path: Optional[Path] = None
     line_number: Optional[int] = None
     column: Optional[int] = None
     context: Optional[str] = None
     suggestion: Optional[str] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         location = ""
         if self.file_path:
             location += f"File: {self.file_path}"
@@ -33,7 +33,7 @@ class ValidationMessage:
         if self.column:
             location += f", Column: {self.column}"
         if self.context:
-            location += f", {self.get_context_output_name()}: {self.context}"
+            location += f", Context : {self.context}"
 
         result = f"[{self.level.upper()}] {self.message}"
         if location:
@@ -43,16 +43,12 @@ class ValidationMessage:
 
         return result
 
-    @abstractmethod
-    def get_context_output_name(self) -> str:
-        """Return a string representation of the context for output"""
-
 
 class BaseValidator(ABC):
     """Base class for validators"""
 
-    def __init__(self):
-        self.messages: List[ValidationMessage] = []
+    def __init__(self) -> None:
+        self.messages: list[ValidationMessage] = []
 
     def validate(self, print_summary: bool = True) -> bool:
         """Validate the configuration and print the warnings and errors messages"""
@@ -61,7 +57,7 @@ class BaseValidator(ABC):
         try:
             self._validate_internal()
         except Exception as e:
-            self._add_message("error", f"Unexpected validation error: {str(e)}")
+            self._add_message("error", f"Unexpected validation error: {e!s}")
             logger.error("Validation exception: %s", traceback.format_exc())
 
         if self.messages and print_summary:
@@ -75,16 +71,14 @@ class BaseValidator(ABC):
             )
             return False
         if self.has_warnings():
-            logger.warning(
-                "⚠️ %s has warnings but is valid", self._get_validation_identifier()
-            )
+            logger.warning("⚠️ %s has warnings but is valid", self._get_validation_identifier())
         else:
             logger.info("✅ %s validation passed!", self._get_validation_identifier())
 
         return True
 
     @abstractmethod
-    def _validate_internal(self):
+    def _validate_internal(self) -> None:
         pass
 
     @abstractmethod
@@ -98,12 +92,12 @@ class BaseValidator(ABC):
         self,
         level: str,
         message: str,
-        file_path: Path = None,
+        file_path: Optional[Path] = None,
         line_number: Optional[int] = None,
         column: Optional[int] = None,
         context: Optional[str] = None,
         suggestion: Optional[str] = None,
-    ):
+    ) -> None:
         """Add a validation message"""
         if file_path is None:
             file_path = self._get_file_path()
@@ -128,7 +122,7 @@ class BaseValidator(ABC):
         """Check if there are any warning-level messages"""
         return any(msg.level == "warning" for msg in self.messages)
 
-    def print_messages(self, show_info: bool = True):
+    def print_messages(self, show_info: bool = True) -> None:
         """Print all validation messages with colors"""
         try:
             init()  # Initialize colorama

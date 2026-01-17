@@ -31,7 +31,7 @@ JenkinsFileGenerator transforms YAML configuration files into complete Jenkins p
 # Or manually:
 python -m venv .venv
 .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+pip install -e .[dev]
 ```
 
 ## Usage
@@ -345,7 +345,7 @@ class MyFeature(BaseFeature):
     def should_include(self, config: Dict[str, Any]) -> bool:
         return "my_feature" in config
 
-    def get_config_model(self) -> BaseModel:
+    def get_config_model(self) -> Type[FeatureConfig]::
         return MyFeatureConfig
 
     @property
@@ -393,6 +393,10 @@ generator/
 2. Create your template in `generator/templates/`
 3. The feature will be automatically discovered and registered
 4. Run `--generate_documentation` to update docs
+
+### Code validation
+
+You can use `ruff` with `ruff check .` and `mypy` with `mypy .` to validate that the code is correct before submitting.
 
 ## License
 

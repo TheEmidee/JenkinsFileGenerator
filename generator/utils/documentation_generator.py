@@ -4,10 +4,10 @@ This class is designed to create documentation for the Jenkins pipeline configur
 import importlib
 import inspect
 import os
+import pkgutil
 import sys
 from pathlib import Path
-import pkgutil
-from typing import List, Union, get_args, get_origin
+from typing import Any, List, Optional, Type, Union, get_args, get_origin
 
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ from generator.core.pipeline_config import PipelineConfig
 class DocumentationGenerator:
     """Generates markdown documentation for the Jenkins pipeline configuration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         package_path = Path(os.path.abspath("documentation"))
 
         if not package_path.exists():
@@ -27,7 +27,7 @@ class DocumentationGenerator:
         self.output_path = package_path
         self.feature_configs = self._discover_feature_configs()
 
-    def generate_documentation(self):
+    def generate_documentation(self) -> None:
         """Generates documentation for the Jenkins pipeline configuration."""
 
         try:
@@ -38,7 +38,7 @@ class DocumentationGenerator:
             logger.error("Failed to generate documentation: %s", e)
             raise e
 
-    def _generate_main_docs_page(self):
+    def _generate_main_docs_page(self) -> None:
         markdown_docs = self._generate_markdown_docs(PipelineConfig)
 
         features = ["# Features"]
@@ -52,9 +52,7 @@ class DocumentationGenerator:
         main_page = self.output_path / "index.md"
         main_page.write_text(markdown_docs)
 
-    def _get_field_type_description(
-        self, model_class: BaseModel, field_name: str, field_info: dict
-    ) -> str:
+    def _get_field_type_description(self, model_class: Type[BaseModel], field_name: str, field_info: dict) -> str:
         """Get a human-readable type description for a field."""
         try:
             # First try to get the type from the model field annotation
@@ -68,7 +66,7 @@ class DocumentationGenerator:
             # Fallback to JSON schema analysis
             return self._get_type_from_schema(field_info)
 
-    def _format_type_annotation(self, type_annotation) -> str:
+    def _format_type_annotation(self, type_annotation: Any) -> str:  # noqa: ANN401
         """Format a type annotation into a readable string."""
         # Handle None type
         if type_annotation is type(None):
@@ -84,7 +82,7 @@ class DocumentationGenerator:
                 "dict",
                 "list",
             ]:
-                return type_annotation.__name__
+                return str(type_annotation.__name__)
 
         # Handle typing generics (Optional, List, Union, etc.)
         origin = get_origin(type_annotation)
@@ -120,9 +118,7 @@ class DocumentationGenerator:
 
         # Handle enums
         try:
-            if hasattr(type_annotation, "__bases__") and any(
-                "Enum" in base.__name__ for base in type_annotation.__bases__
-            ):
+            if hasattr(type_annotation, "__bases__") and any("Enum" in base.__name__ for base in type_annotation.__bases__):
                 return f"Enum ({type_annotation.__name__})"
         except (AttributeError, TypeError):
             pass
@@ -138,7 +134,7 @@ class DocumentationGenerator:
         if "enum" in field_info:
             return f"enum: {', '.join(map(str, field_info['enum']))}"
         if "$ref" in field_info:
-            return field_info["$ref"].split("/")[-1]
+            return str(field_info["$ref"].split("/")[-1])
         if "type" in field_info:
             schema_type = field_info["type"]
             if schema_type == "array" and "items" in field_info:
@@ -146,7 +142,7 @@ class DocumentationGenerator:
                 return f"List[{items_type}]"
             if schema_type == "object":
                 return "Dict"
-            return schema_type
+            return str(schema_type)
         if "anyOf" in field_info:
             # Handle Optional types and unions
             types = []
@@ -160,7 +156,7 @@ class DocumentationGenerator:
             if has_null and len(types) == 1:
                 return f"Optional[{types[0]}]"
             if has_null:
-                return f"Union[{', '.join(types + ['None'])}]"
+                return f"Union[{', '.join([*types, 'None'])}]"
 
             return f"Union[{', '.join(types)}]"
 
@@ -168,10 +164,10 @@ class DocumentationGenerator:
 
     def _generate_markdown_docs(
         self,
-        model_class: BaseModel,
-        title: str = None,
+        model_class: Type[BaseModel],
+        title: Optional[str] = None,
         level: int = 0,
-        output_description=True,
+        output_description: bool = True,
     ) -> str:
         """Generate markdown documentation from a Pydantic model."""
         schema = model_class.model_json_schema()
@@ -185,7 +181,7 @@ class DocumentationGenerator:
             docs.append(f"{'  ' * level}{prefix}{title}\n")
 
             module_docstring = None
-            if hasattr(model_class, '__module__'):
+            if hasattr(model_class, "__module__"):
                 try:
                     module = sys.modules[model_class.__module__]
                     module_docstring = module.__doc__
@@ -200,9 +196,7 @@ class DocumentationGenerator:
                 if level == 0:
                     docs.append("```")
 
-                processed_lines = [
-                    f"{'  ' * level}{prefix}{line}" for line in description.split("\n")
-                ]
+                processed_lines = [f"{'  ' * level}{prefix}{line}" for line in description.split("\n")]
                 docs.append("\n".join(processed_lines))
 
                 if level == 0:
@@ -227,7 +221,7 @@ class DocumentationGenerator:
         required_fields = set(schema.get("required", []))
 
         for field_name, field_info in properties.items():
-            text = f"{'  ' * (level+1)}* **{field_name}**"
+            text = f"{'  ' * (level + 1)}* **{field_name}**"
 
             if "description" in field_info:
                 text += f": {field_info['description']}"
@@ -238,9 +232,7 @@ class DocumentationGenerator:
                 text += " (Required)"
 
             # Get improved type information
-            field_type = self._get_field_type_description(
-                model_class, field_name, field_info
-            )
+            field_type = self._get_field_type_description(model_class, field_name, field_info)
             text += f" Type: `{field_type}`"
 
             # Default value
@@ -280,9 +272,7 @@ class DocumentationGenerator:
                                     output_description=False,
                                 )
                             )
-                elif inspect.isclass(field_type_obj) and issubclass(
-                    field_type_obj, BaseModel
-                ):
+                elif inspect.isclass(field_type_obj) and issubclass(field_type_obj, BaseModel):
                     docs.append(
                         self._generate_markdown_docs(
                             field_type_obj,
@@ -298,7 +288,7 @@ class DocumentationGenerator:
 
         return "\n".join(docs)
 
-    def _generate_features_docs_pages(self):
+    def _generate_features_docs_pages(self) -> None:
         """Generate markdown documentation for all feature configurations."""
         if not self.feature_configs:
             return
@@ -309,7 +299,7 @@ class DocumentationGenerator:
             text += "\n[Back to main page](index.md)"
             path.write_text(text)
 
-    def _discover_feature_configs(self) -> List[BaseModel]:
+    def _discover_feature_configs(self) -> List[Type[BaseModel]]:
         """
         Discover all classes that inherit from a base class (e.g., FeatureConfig) in a package.
 
@@ -341,9 +331,7 @@ class DocumentationGenerator:
                     package = importlib.import_module(package_name)
 
                     # Walk through all modules in the package
-                    for importer, modname, ispkg in pkgutil.iter_modules(
-                        package.__path__
-                    ):
+                    for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
                         try:
                             full_modname = f"{package_name}.{modname}"
                             module = importlib.import_module(full_modname)
@@ -354,15 +342,11 @@ class DocumentationGenerator:
                                     discovered_classes.append(obj)
 
                         except ImportError as e:
-                            print(
-                                f"Warning: Could not import module {full_modname}: {e}"
-                            )
+                            print(f"Warning: Could not import module {full_modname}: {e}")
                             continue
 
                 except ImportError as e:
-                    print(
-                        f"Package import failed: {e}, trying individual file imports..."
-                    )
+                    print(f"Package import failed: {e}, trying individual file imports...")
         finally:
             # Clean up sys.path
             if path_added and parent_dir in sys.path:
@@ -370,7 +354,7 @@ class DocumentationGenerator:
 
         return discovered_classes
 
-    def _is_subclass_of_base(self, obj, base_class_name: str) -> bool:
+    def _is_subclass_of_base(self, obj: object, base_class_name: str) -> bool:
         """
         Helper function to check if a class inherits from a base class by name.
         """

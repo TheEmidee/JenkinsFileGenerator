@@ -5,14 +5,16 @@ and validating configurations.
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Type
+
+from mako.lookup import Template, TemplateLookup  # type: ignore[import-untyped]
 from pydantic import BaseModel, PrivateAttr, ValidationError
-from mako.lookup import TemplateLookup
 
 from generator import logger
-from generator.core.pipeline_config import PipelineConfig
-from generator.core.generated_blocks import GeneratedBlocks
-from generator.core.template_context import TemplateContext
 from generator.core.feature_registry import FeatureRegistry
+from generator.core.generated_blocks import GeneratedBlocks
+from generator.core.pipeline_config import PipelineConfig
+from generator.core.template_context import TemplateContext
+from generator.core.validation_context import ConfigValidationContext
 
 
 class FeatureConfig(BaseModel, ABC):
@@ -24,9 +26,9 @@ class FeatureConfig(BaseModel, ABC):
 class BaseFeature(ABC):
     """Base class for all pipeline features"""
 
-    feature_name: str = None  # Class attribute instead of property
+    feature_name: str = ""  # Class attribute instead of property
 
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, **kwargs: dict[str, Any]) -> None:
         """Auto-register feature subclasses"""
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "feature_name") and cls.feature_name:
@@ -47,32 +49,26 @@ class BaseFeature(ABC):
         """Determine if this feature should be included based on config."""
 
     @abstractmethod
-    def get_config_model(self) -> Type[BaseModel]:
+    def get_config_model(self) -> Type[FeatureConfig]:
         """Return the Pydantic model for validating this feature's config."""
 
-    def get_feature_config(
-        self, full_config: PipelineConfig, context: Any
-    ) -> Dict[str, Any]:
+    def get_feature_config(self, full_config: PipelineConfig, validation_context: ConfigValidationContext) -> FeatureConfig:
         """Extract and validate this feature's config from the full config."""
         feature_config = full_config.features.get(self.feature_name, {})
 
         config_model = self.get_config_model()
         try:
-            validated = config_model.model_validate(feature_config, context=context)
+            validated = config_model.model_validate(feature_config, context=validation_context)
             return validated
         except ValidationError as e:
             raise ValueError(f"Invalid config for feature '{self.feature_name}': {e}") from e
 
-    def render_blocks(
-        self, context: TemplateContext, template_lookup: TemplateLookup
-    ) -> GeneratedBlocks:
+    def render_blocks(self, context: TemplateContext, template_lookup: TemplateLookup) -> GeneratedBlocks:
         """Render all template blocks for this feature."""
         try:
             template = template_lookup.get_template(self.template_path)
         except Exception as exc:
-            raise FileNotFoundError(
-                f"Template not found for feature '{self.feature_name}': {self.template_path}"
-            ) from exc
+            raise FileNotFoundError(f"Template not found for feature '{self.feature_name}': {self.template_path}") from exc
 
         blocks = GeneratedBlocks()
 
@@ -84,15 +80,15 @@ class BaseFeature(ABC):
                 # Block not defined in template - that's OK
                 pass
             except Exception as e:
-                logger.error("Error rendering %s for %s", block_type, self.feature_name, exc_info=e)
+                logger.error("Error rendering %s for %s : %s", block_type, self.feature_name, e, exc_info=e)
 
         return blocks
 
-    def render_block(self, block_type: str, context: TemplateContext, template) -> str:
+    def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         """Render a single block for this feature."""
         rendered = template.get_def(block_type).render_unicode(**context.__dict__)
         if rendered.strip():
-            cleaned = rendered.strip()  # re.sub(r'\n\s*\n', '\n', rendered.strip())
+            cleaned = str(rendered.strip())  # re.sub(r'\n\s*\n', '\n', rendered.strip())
             if context.global_values.get("output_feature_sections", True):
                 cleaned = f"// === Feature: {self.feature_name} ===\n{cleaned}\n// === End feature: {self.feature_name} ==="
 
