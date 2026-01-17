@@ -1,8 +1,8 @@
 # JenkinsFileGenerator
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) 
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/) 
-[![Version](https://img.shields.io/badge/version-1.5.0-green.svg)](CHANGELOG.md)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE) 
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/) 
+[![Version](https://img.shields.io/badge/version-1.6.0-blue.svg)](CHANGELOG.md)
 
 ---
 
@@ -38,8 +38,10 @@ pip install -e .[dev]
 
 ### Basic Command Line Usage
 
+Activating the virtual environment will create a script named jenkinsfilegenerator that you can use:
+
 ```bash
-python -m generator <config_file> [options]
+jenkinsfilegenerator <config_file> [options]
 ```
 
 ### Arguments
@@ -62,19 +64,19 @@ python -m generator <config_file> [options]
 
 ```bash
 # Basic generation
-python -m generator config.yaml -o Jenkinsfile
+jenkinsfilegenerator config.yaml -o Jenkinsfile
 
 # With linting
-python -m generator config.yaml -o Jenkinsfile --lint
+jenkinsfilegenerator config.yaml -o Jenkinsfile --lint
 
 # With the blackboard data
-python -m generator config.yaml -o Jenkinsfile --blackboarddata "build_type=Development,platform=Windows" --lint
+jenkinsfilegenerator config.yaml -o Jenkinsfile --blackboarddata "build_type=Development,platform=Windows" --lint
 
 # Use a batch file with linting
-python -m generator --batch batch.yaml --lint
+jenkinsfilegenerator --batch batch.yaml --lint
 
 # Generate documentation
-python -m generator config.yaml --generate_documentation
+jenkinsfilegenerator config.yaml --generate_documentation
 ```
 
 ## Blackboard data
@@ -397,6 +399,10 @@ generator/
 ### Code validation
 
 You can use `ruff` with `ruff check .` and `mypy` with `mypy .` to validate that the code is correct before submitting.
+
+### Code Formatting
+
+You can use `ruff format .` to automatically reformat the code.
 
 ## License
 

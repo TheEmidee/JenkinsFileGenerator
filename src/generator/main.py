@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-"""This script is the entry point for the jenkinsfile generator module"""
-
 import argparse
 import logging
 import traceback
@@ -175,7 +172,3 @@ Examples:
             return 1
 
     return 0
-
-
-if __name__ == "__main__":
-    main()
