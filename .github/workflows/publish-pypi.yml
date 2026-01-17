@@ -25,7 +25,7 @@ jobs:
       - name: Build venv
         run: |
           python -m venv ./venv
-          ./venv/bin/python -m pip install .[test]
+          ./venv/bin/python -m pip install .[dist]
         if: steps.restore-cache.outputs.cache-hit != 'true'
       # Cache the built virtualenv for future runs
       - name: Cache virtualenv
