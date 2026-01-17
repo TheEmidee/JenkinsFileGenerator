@@ -58,6 +58,7 @@ dist = [
   "twine==6.2.0",
 ]
 
+
 dev = ["JenkinsfileGenerator[lint, dist]"]
 
 [tool.ruff]
