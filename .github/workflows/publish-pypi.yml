@@ -29,6 +29,23 @@ jobs:
         name: python-package-distributions
         path: dist/
 
+  tag-release:
+    name: Tag Release
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        generate_release_notes: true
+        prerelease: false
+
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
