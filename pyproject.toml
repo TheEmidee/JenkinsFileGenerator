@@ -1,6 +1,6 @@
 [project]
 name = "JenkinsfileGenerator"
-version = "1.6.1"
+dynamic = ["version"]
 description = "Module that generates Jenkins pipeline files from YAML configuration files using a modular feature-based approach"
 readme.content-type = "text/markdown"
 readme.file = "README.md"
@@ -89,8 +89,11 @@ warn_return_any = true
 disallow_untyped_defs = true
 
 [build-system]
-requires = ["hatchling >= 1.26"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.hatch.metadata]
 allow-direct-references = true
