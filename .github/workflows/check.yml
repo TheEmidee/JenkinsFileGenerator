@@ -21,7 +21,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        pip install -e ".[dev]"
+        pip install -e ".[lint]"
     
     - name: Lint with ruff
       run: |
