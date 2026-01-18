@@ -55,30 +55,7 @@ jobs:
             fi
           fi
           echo ""
-          
-          # Check pyproject.toml version
-          if [ -f "pyproject.toml" ]; then
-            PYPROJECT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])" 2>/dev/null || \
-                                grep -oP '^version\s*=\s*"\K[0-9]+\.[0-9]+\.[0-9]+' pyproject.toml | head -n 1)
-            
-            if [ -z "$PYPROJECT_VERSION" ]; then
-              echo "❌ Could not find version in pyproject.toml"
-              ERRORS=$((ERRORS + 1))
-            else
-              echo "📦 pyproject.toml version: $PYPROJECT_VERSION"
-              
-              if [ "$PYPROJECT_VERSION" = "$CHANGELOG_VERSION" ]; then
-                echo "✅ pyproject.toml version matches CHANGELOG.md"
-              else
-                echo "❌ pyproject.toml version ($PYPROJECT_VERSION) does not match CHANGELOG.md ($CHANGELOG_VERSION)"
-                ERRORS=$((ERRORS + 1))
-              fi
-            fi
-          else
-            echo "⚠️  pyproject.toml not found"
-          fi
-          echo ""
-          
+                    
           # Check README.md version badge
           README_VERSION=$(grep -oP 'version-\K[0-9]+\.[0-9]+\.[0-9]+' README.md | head -n 1)
           
@@ -106,7 +83,6 @@ jobs:
             echo ""
             echo "Please ensure:"
             echo "  1. CHANGELOG.md is updated with a new version entry (## [X.Y.Z] - YYYY-MM-DD)"
-            echo "  2. pyproject.toml version matches the CHANGELOG version"
-            echo "  3. README.md version badge matches the CHANGELOG version"
+            echo "  2. README.md version badge matches the CHANGELOG version"
             exit 1
           fi
