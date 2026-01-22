@@ -26,19 +26,19 @@ classifiers = [
   "Topic :: Utilities",
 ]
 dependencies = [
-  "annotated-types==0.7.0",
-  "colorama==0.4.6",
-  "types-colorama==0.4.15",
-  "Mako==1.3.9",
-  "MarkupSafe==3.0.2",
-  "packaging==24.2",
-  "psutil==6.1.1",
-  "pydantic==2.11.7",
-  "pydantic_core==2.33.2",
-  "PyYAML==6.0.2",
-  "typing-inspection==0.4.1",
-  "typing_extensions==4.14.0",
-  "types-PyYAML==6.0.12"
+  "annotated-types",
+  "colorama",
+  "types-colorama",
+  "Mako",
+  "MarkupSafe",
+  "packaging",
+  "psutil",
+  "pydantic",
+  "pydantic_core",
+  "PyYAML",
+  "typing-inspection",
+  "typing_extensions",
+  "types-PyYAML"
 ]
 
 urls.Changelog = "https://github.com/TheEmidee/JenkinsfileGenerator/releases"
@@ -48,15 +48,16 @@ urls.Tracker = "https://github.com/TheEmidee/JenkinsfileGenerator/issues"
 
 [project.optional-dependencies]
 lint = [ 
-  "ruff>=0.1.0",
-  "mypy>=1.10.0"
+  "ruff",
+  "mypy"
 ]
 
 dist = [
-  "hatchling>=1.26",
-  "build==1.4.0",
-  "wheel==0.45.1",
-  "twine==6.2.0",
+  "hatchling",
+  "build",
+  "wheel",
+  "twine",
+  "towncrier"
 ]
 
 dev = ["JenkinsfileGenerator[lint, dist]"]
