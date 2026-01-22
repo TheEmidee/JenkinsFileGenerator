@@ -1,4 +1,4 @@
-name: Check Changelog Folder
+name: Changelog
 
 on:
   pull_request:
