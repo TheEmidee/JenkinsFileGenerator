@@ -27,6 +27,6 @@ jobs:
         run: |
           echo Compare with origin/$GITHUB_BASE_REF
           if ! pipx run towncrier check --compare-with origin/$GITHUB_BASE_REF; then
-          echo "Please see https://github.com/TheEmidee/PythonModuleTests/blob/main/changelog/README.rst for guidance."
+          echo "Please see https://github.com/TheEmidee/JenkinsFileGenerator/blob/main/changelog/README.rst for guidance."
             false
           fi
