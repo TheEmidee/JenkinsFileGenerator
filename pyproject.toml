@@ -29,6 +29,8 @@ dependencies = [
   "annotated-types",
   "colorama",
   "types-colorama",
+  "invoke",
+  "types-invoke",
   "Mako",
   "MarkupSafe",
   "packaging",
@@ -57,9 +59,7 @@ dist = [
   "build",
   "wheel",
   "twine",
-  "towncrier",
-  "invoke",
-  "types-invoke"
+  "towncrier"
 ]
 
 dev = ["JenkinsfileGenerator[lint, dist]"]
