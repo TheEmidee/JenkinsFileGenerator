@@ -265,8 +265,8 @@ class UnrealFeature(BaseFeature):
             """Root configuration for the build system."""
 
             groups: List[UnrealBuildgraphJsonOutput_Group] = Field(alias="Groups")
-            badges: List = Field(alias="Badges")
-            reports: List = Field(alias="Reports")
+            badges: List[str] = Field(alias="Badges")
+            reports: List[str] = Field(alias="Reports")
             build_agents: Dict[str, UnrealBuildgraphJsonOutput_BuildAgent] = Field(default_factory=dict, exclude=True)
 
             class Config:
