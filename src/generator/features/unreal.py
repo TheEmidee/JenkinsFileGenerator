@@ -86,9 +86,13 @@ class UnrealProjectConfig(BaseModel):
         description="Path to the PyScripts folder if it's not at the root of the uproject",
     )
 
+    def get_uproject_folder_path(self) -> Path:
+        """Get the absolute path to the uproject folder."""
+        return self.uproject_path.parent.resolve()
+
     def get_absolute_pyscripts_folder_path(self) -> Path:
         """Get the absolute path to the uproject file."""
-        return (self.uproject_path.parent / self.pyscripts_folder).resolve()
+        return (self.get_uproject_folder_path() / self.pyscripts_folder).resolve()
 
     # Done like this to make it optional in the config file
     # but will try to be set to a relative path from the uproject_path
@@ -172,7 +176,7 @@ class UnrealFeature(BaseFeature):
 
     def get_jenkins_jobs(self, config: UnrealConfig) -> str:
         """Generate the Jenkins jobs for Unreal."""
-        module_path = config.project.get_absolute_pyscripts_folder_path()
+        module_path = config.project.get_absolute_pyscripts_folder_path() / "src"
         module_name = "uepyscripts.run.buildgraph"
 
         abs_package_root = os.path.abspath(module_path)
@@ -186,9 +190,10 @@ class UnrealFeature(BaseFeature):
 
         export_path = temp_folder.joinpath("buildgraph.json")
 
-        extra_parameters = [f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
+        args = [ f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
+        args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
 
-        uepyscripts.run(config.buildgraph.target, config.buildgraph.properties, extra_parameters)
+        uepyscripts.run(config.buildgraph.target, args)
 
         class UnrealBuildgraphJsonOutput_Notify(BaseModel):
             """Notification configuration for a node."""
