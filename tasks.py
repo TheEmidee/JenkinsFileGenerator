@@ -80,7 +80,7 @@ def get_last_version_from_changelog(changelog_path: Path = Path("CHANGELOG.md"))
 
     # Look for version patterns like ## v1.2.3, ## 1.2.3, # v1.2.3, etc.
     # This regex looks for markdown headers followed by version numbers
-    pattern = r"^##?\s*v?(\d+\.\d+\.\d+)"
+    pattern = r"^##?\s*\[v?(\d+\.\d+\.\d+)\]"
 
     matches = re.findall(pattern, content, re.MULTILINE)
 
