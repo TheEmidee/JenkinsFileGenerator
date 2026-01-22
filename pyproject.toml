@@ -57,7 +57,9 @@ dist = [
   "build",
   "wheel",
   "twine",
-  "towncrier"
+  "towncrier",
+  "invoke",
+  "types-invoke"
 ]
 
 dev = ["JenkinsfileGenerator[lint, dist]"]
@@ -85,7 +87,6 @@ fixable = ["ALL"]
 convention = "google"
 
 [tool.mypy]
-python_version = "3.12"
 warn_return_any = true
 disallow_untyped_defs = true
 
