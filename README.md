@@ -411,7 +411,8 @@ MIT License - see LICENSE file for details.
 
 1. Follow the existing feature pattern
 2. Add appropriate validation and documentation
-3. Include template tests
-4. Update documentation
+3. Add entries in the .changelog folder for towncrier. You can read the [README](.changelog/README.md) file for more information.
+4. Add if possible a configuration example in the [examples](examples/) folder.
+5. Update documentation
 
 For detailed configuration options, see the generated documentation in the `documentation/` directory.

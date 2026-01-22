@@ -1,0 +1,93 @@
+name: Release Python Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Fetch all history for tag creation
+          ref: develop
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if CHANGELOG was updated
+        run: |
+          # Get the tag name without 'refs/tags/' prefix
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION_NUMBER="${TAG_NAME#v}"
+          
+          echo "Checking if CHANGELOG.md contains version $VERSION_NUMBER"
+          
+          # Check if CHANGELOG.md exists
+          if [ ! -f CHANGELOG.md ]; then
+            echo "❌ ERROR: CHANGELOG.md does not exist!"
+            exit 1
+          fi
+          
+          # Check if the version appears in CHANGELOG.md
+          if grep -q "## ${VERSION_NUMBER}" CHANGELOG.md || grep -q "## \[${VERSION_NUMBER}\]" CHANGELOG.md; then
+            echo "✅ CHANGELOG.md has been updated for version $VERSION_NUMBER"
+          else
+            echo "❌ ERROR: CHANGELOG.md does not contain an entry for version $VERSION_NUMBER"
+            echo "Please update CHANGELOG.md before creating a release tag."
+            exit 1
+          fi
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install -e ".[dist]"
+
+      - name: Build package
+        run: python -m build --wheel
+
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v5
+        with:
+            name: python-package-distributions
+            path: dist/
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  publish-to-pypi:
+    name: >-
+      Publish Python 🐍 distribution 📦 to PyPI
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/JenkinsfileGenerator
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v6
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1

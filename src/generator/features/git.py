@@ -82,7 +82,7 @@ class GitCheckoutConfig(BaseModel):
                 model_cls = globals().get(class_name)
                 if model_cls is None:
                     raise ValueError(f"Unknown extension key: {yaml_key}")
-                return model_cls  # type: ignore[return-value,no-any-return]
+                return model_cls  # type: ignore[no-any-return]
 
             model_cls = get_config_class(key)
             if model_cls is None:
