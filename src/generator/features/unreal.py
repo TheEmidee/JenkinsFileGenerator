@@ -164,13 +164,15 @@ class UnrealFeature(BaseFeature):
             context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
-            inlined_properties: str = 'def buildgraph_properties = """\n'
+
+            # list of all the properties to pass to buildgraph, one per line. 
+            # The character ` at the end of each line is important for the powerShell call
+            buildgraph_properties: str = ""
             if unreal_config.buildgraph.properties is not None:
                 lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
-                inlined_properties += "\n".join(lines)
-            inlined_properties += '\n""".stripIndent().trim()'
+                buildgraph_properties += " `\n".join(lines)
 
-            context.feature_config._accumulator["buildgraph_properties"] = inlined_properties
+            context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
 
         return super().render_block(block_type, context, template)
 
@@ -190,8 +192,10 @@ class UnrealFeature(BaseFeature):
 
         export_path = temp_folder.joinpath("buildgraph.json")
 
-        args = [ f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
-        args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
+        args = [f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
+
+        if config.buildgraph.properties:
+            args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
 
         uepyscripts.run(config.buildgraph.target, args)
 
