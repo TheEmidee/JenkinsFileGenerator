@@ -5,7 +5,7 @@ from mako.runtime import Context  # type: ignore[import-untyped]
 """Utility functions for Groovy code generation."""
 
 
-def write_groovy_repr(context: Context, val: Any) -> None:  # noqa: ANN401
+def write_groovy_repr(context: Context, val: Any) -> str:  # noqa: ANN401
     """Writes a Groovy representation of the given value to the context."""
     if isinstance(val, bool):
         context.write("true" if val else "false")
@@ -15,6 +15,8 @@ def write_groovy_repr(context: Context, val: Any) -> None:  # noqa: ANN401
         context.write("'{}'".format(val.replace("'", "\\'")))
     else:
         context.write(str(val))
+
+    return ""
 
 
 def escape_quotes(text: str) -> str:
