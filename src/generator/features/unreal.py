@@ -165,7 +165,7 @@ class UnrealFeature(BaseFeature):
 
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
 
-            # list of all the properties to pass to buildgraph, one per line. 
+            # list of all the properties to pass to buildgraph, one per line.
             # The character ` at the end of each line is important for the powerShell call
             buildgraph_properties: str = ""
             if unreal_config.buildgraph.properties is not None:
