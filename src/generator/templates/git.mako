@@ -1,7 +1,7 @@
 <%namespace name="groovy" module="generator.utils.groovy"/>
 
 <%def name="additional_functions()">
-def checkout() {
+def projectCheckout() {
 % if feature_config.use_simple_checkout:
     checkout scm
     return []
