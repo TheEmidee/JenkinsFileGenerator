@@ -17,12 +17,11 @@ class PythonConfig(FeatureConfig):
     """Configuration for the pipeline properties."""
 
     venv_activation_script_path: str = Field(
-        description=
-            (
+        description=(
             "The path to the virtual environment activation script."
             "This must point to a script that can be sourced to activate the virtual environment."
-            )
         )
+    )
     venv_folder: str = Field(
         description="The path to the virtual environment folder after it has been created by executing venv_activation_script_path.",
     )
@@ -30,10 +29,10 @@ class PythonConfig(FeatureConfig):
     @model_validator(mode="after")
     def validate_model(self, info: ValidationInfo) -> "PythonConfig":
         if self.venv_folder == "":
-           raise ValueError("venv_folder cannot be an empty string")
-       
+            raise ValueError("venv_folder cannot be an empty string")
+
         if not self.venv_folder.endswith("/"):
-           self.venv_folder += "/"
+            self.venv_folder += "/"
 
         return self
 

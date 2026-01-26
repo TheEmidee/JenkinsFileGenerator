@@ -153,7 +153,7 @@ class UnrealFeature(BaseFeature):
 
     def get_config_model(self) -> Type[FeatureConfig]:
         return UnrealConfig
-    
+
     @property
     def dependencies(self) -> List[str]:
         return ["python", "utils"]
