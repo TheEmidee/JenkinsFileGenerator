@@ -29,7 +29,7 @@ def archivePackages() {
             def rotate_archives_output_file_path = "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
 
             stage ( "Rotate Archives" ) {
-                executePythonScript( "archive-rotate", """
+                executePythonScript( "gamedevtool-archives-rotate", """
                 --directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" 
                 --keep_count="${feature_config.rotate_archives.keep_count}" 
                 <%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
@@ -53,7 +53,7 @@ def archivePackages() {
 
                 def uploaded_files_output_path = "${feature_config.upload_archives.output_file_name.as_posix()}"
 
-                executePythonScript( "archive-upload", """
+                executePythonScript( "gamedevtool-archives-upload", """
                 <%text>--local_folder="${file}"</%text>
                 --bucket_name="${feature_config.upload_archives.bucket_name}"
                 --region="${feature_config.upload_archives.region}"
