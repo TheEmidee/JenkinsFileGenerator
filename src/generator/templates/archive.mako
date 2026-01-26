@@ -26,15 +26,17 @@ def archivePackages() {
             activatePythonEnvironment()
 
             % if feature_config.rotate_archives.enabled:
+            def rotate_archives_output_file_path = "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+
             stage ( "Rotate Archives" ) {
                 executePythonScript( "archive-rotate", """
                 --directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" 
                 --keep_count="${feature_config.rotate_archives.keep_count}" 
-                --folder_output_file_name="${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+                <%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
                 """ )
 
                 % if feature_config.rotate_archives.slack and feature_config.rotate_archives.slack.enabled:
-                def foldername = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+                <%text>def foldername = readFile "${rotate_archives_output_file_path}"</%text>
                 slackSend( channel: "${feature_config.rotate_archives.slack.channel}", message: "${feature_config.rotate_archives.slack.message_template}" )
                 % endif
             }
@@ -44,10 +46,12 @@ def archivePackages() {
 
             stage ( "Upload Archives" ) {
                 % if feature_config.rotate_archives.enabled:
-                def file = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+                <%text>def file = readFile "${rotate_archives_output_file_path}"</%text>
                 % else:
                 def file = "${feature_config.upload_archives.local_folder}"
                 % endif
+
+                def uploaded_files_output_path = "${feature_config.upload_archives.output_file_name.as_posix()}"
 
                 executePythonScript( "archive-upload", """
                 <%text>--local_folder="${file}"</%text>
@@ -57,11 +61,11 @@ def archivePackages() {
                 --secret_key="${feature_config.upload_archives.secret_key}"
                 --destination_folder="${feature_config.upload_archives.destination_folder}"
                 --keep_count="${feature_config.upload_archives.keep_count}"
-                --output_file="${feature_config.upload_archives.output_file_name.as_posix()}"
+                <%text>--output_file="${uploaded_files_output_path}"</%text>
                 """ )
 
                 % if feature_config.upload_archives.slack and feature_config.upload_archives.slack.enabled:
-                def uploaded_files = readFile "${feature_config.upload_archives.output_file_name.as_posix()}"
+                <%text>def uploaded_files = readFile "${uploaded_files_output_path}"</%text>
                 def lines = uploaded_files.split('\n')
 
                 if ( lines.size() > 0 ) {
