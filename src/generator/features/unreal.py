@@ -153,10 +153,10 @@ class UnrealFeature(BaseFeature):
 
     def get_config_model(self) -> Type[FeatureConfig]:
         return UnrealConfig
-
+    
     @property
     def dependencies(self) -> List[str]:
-        return ["utils"]
+        return ["python", "utils"]
 
     def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
@@ -170,7 +170,7 @@ class UnrealFeature(BaseFeature):
             buildgraph_properties: str = ""
             if unreal_config.buildgraph.properties is not None:
                 lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
-                buildgraph_properties += " `\n".join(lines)
+                buildgraph_properties += " \n".join(lines)
 
             context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
 

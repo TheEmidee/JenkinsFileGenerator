@@ -69,13 +69,13 @@ def runBuildGraph( groupName, taskNames, platform ) {
 
                     def build_tag = BUILD_TAG.replace(" ", "_")
 
-                    <%text>pwsh """
-                        ."</%text>${feature_config.project.pyscripts_folder}<%text>/.venv/Scripts/ue-ci-run-buildgraph.exe" `
-                        --target="${taskName}" `
-                        --build_tag="${build_tag}" `</%text>
-                        ${feature_config._accumulator['buildgraph_properties']}<%text>
-                    """
-                    </%text>
+                    def properties = """
+<%text>--target="${taskName}" 
+--build_tag="${build_tag}"</%text> 
+${feature_config._accumulator['buildgraph_properties']}
+"""
+
+                    executePythonScript( "ue-ci-run-buildgraph", properties )
 
                     postBuildGraphTasks( taskName )
                 }
@@ -103,10 +103,8 @@ def cleanup() {
 
             stage ( "Cleanup" ) {
                 activatePythonEnvironment()
-                <%text>pwsh """
-                    ."</%text>${feature_config.project.pyscripts_folder}<%text>/.venv/Scripts/ue-ci-cleanup.exe" --build_tag="${BUILD_TAG}"
-                """
-                </%text>
+
+                executePythonScript( "ue-ci-cleanup", <%text>"--build_tag=${BUILD_TAG}"</%text> )
             }
 
             postCleanupTasks()
@@ -141,12 +139,5 @@ def postBuildGraphTasks( String taskName ) {
     % if global_values['customization'].get('unreal_postBuildGraphTasks'):
     <%include file="${global_values['customization']['unreal_postBuildGraphTasks']}"/>
     % endif
-}
-
-def activatePythonEnvironment() {
-    <%text>pwsh """
-        ."</%text>${feature_config.project.pyscripts_folder}<%text>/setup_venv.ps1"
-    """
-    </%text>
 }
 </%def>
