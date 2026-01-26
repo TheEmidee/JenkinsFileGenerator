@@ -102,3 +102,7 @@ class ArchiveFeature(BaseFeature):
 
     def get_config_model(self) -> Type[FeatureConfig]:
         return ArchiveConfig
+    
+    @property
+    def dependencies(self) -> list[str]:
+        return ["python"]
