@@ -48,11 +48,11 @@ class Graph:
         in_degree = {key: value for key, value in in_degree.items() if key not in nodes_with_no_dependencies}
 
         queue = deque([node for node in in_degree if in_degree[node] == 0])
-        sorted_hierarchy : list[list[str]] = []
+        sorted_hierarchy: list[list[str]] = []
 
         while queue:
             level_size = len(queue)
-            current_level_nodes : list[str]= []
+            current_level_nodes: list[str] = []
 
             for _ in range(level_size):
                 node = queue.popleft()
