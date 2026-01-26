@@ -48,11 +48,11 @@ class Graph:
         in_degree = {key: value for key, value in in_degree.items() if key not in nodes_with_no_dependencies}
 
         queue = deque([node for node in in_degree if in_degree[node] == 0])
-        sorted_hierarchy = []
+        sorted_hierarchy: list[list[str]] = []
 
         while queue:
             level_size = len(queue)
-            current_level_nodes = []
+            current_level_nodes: list[str] = []
 
             for _ in range(level_size):
                 node = queue.popleft()
@@ -71,4 +71,7 @@ class Graph:
 
         sorted_hierarchy.append(nodes_with_no_dependencies)
         sorted_hierarchy.reverse()
+
+        # Sort all the tasks of each parallel group alphabetically for consistency
+        sorted_hierarchy = [sorted(inner) for inner in sorted_hierarchy]
         return sorted_hierarchy
