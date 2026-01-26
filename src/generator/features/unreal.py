@@ -81,18 +81,10 @@ class UnrealProjectConfig(BaseModel):
     """Configuration model for the project section of Unreal."""
 
     uproject_path: Path = Field(description="The path to the .uproject file of the Unreal project.")
-    pyscripts_folder: str = Field(
-        default_factory=lambda: "",
-        description="Path to the PyScripts folder if it's not at the root of the uproject",
-    )
-
+    
     def get_uproject_folder_path(self) -> Path:
         """Get the absolute path to the uproject folder."""
         return self.uproject_path.parent.resolve()
-
-    def get_absolute_pyscripts_folder_path(self) -> Path:
-        """Get the absolute path to the uproject file."""
-        return (self.get_uproject_folder_path() / self.pyscripts_folder).resolve()
 
     # Done like this to make it optional in the config file
     # but will try to be set to a relative path from the uproject_path
@@ -100,7 +92,7 @@ class UnrealProjectConfig(BaseModel):
     @model_validator(mode="after")
     def validate_model(self, info: ValidationInfo) -> "UnrealProjectConfig":
         """Validation of the project config model
-        and try to resolve paths to the uproject file and pyscripts folder."""
+        and try to resolve paths to the uproject file."""
         if not info.context or not info.context.config_file_path:
             raise ValueError("A context with a config_file_path is required")
 
@@ -118,20 +110,6 @@ class UnrealProjectConfig(BaseModel):
 
         logger.info("Resolved uproject_path: %s", self.uproject_path)
 
-        if self.pyscripts_folder is None:
-            logger.debug("pyscripts_folder is not set. Default to PyScripts")
-            self.pyscripts_folder = Path("PyScripts")
-
-        uproject_path = self.uproject_path
-        if uproject_path is None:
-            raise ValueError("uproject_path must be validated before pyscripts_folder")
-
-        absolute_pyscripts_folder = self.get_absolute_pyscripts_folder_path()
-
-        if not absolute_pyscripts_folder.is_dir():
-            raise ValueError(f"Pyscripts folder not found at {absolute_pyscripts_folder}.")
-
-        logger.info("Resolved pyscripts_folder: %s", self.pyscripts_folder)
         return self
 
 
