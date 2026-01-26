@@ -22,7 +22,7 @@ def archivePackages() {
 
         ${utils.get_workspace()} 
         {
-            checkout()
+            projectCheckout()
 
             % if feature_config.rotate_archives.enabled:
             stage ( "Rotate Archives" ) {

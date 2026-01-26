@@ -1,7 +1,7 @@
 <%namespace name="groovy" module="generator.utils.groovy"/>
 
 <%def name="additional_functions()">
-def checkout() {
+def projectCheckout() {
     cm(
     % if feature_config.checkout.shelveset or feature_config.checkout.label:
         % if feature_config.checkout.shelveset:

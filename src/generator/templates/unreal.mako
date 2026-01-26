@@ -59,8 +59,6 @@ def runBuildGraph( groupName, taskNames, platform ) {
         {
             def scmVars = checkout()
 
-            ${feature_config._accumulator['buildgraph_properties']}
-
             taskNames.each { String taskName ->
                 stage( taskName ) {
                     preBuildGraphTasks()
@@ -69,14 +67,13 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     ${pre_task}
                     % endfor
 
+                    def build_tag = BUILD_TAG.replace(" ", "_")
+
                     <%text>pwsh """
-                        ."</%text>${feature_config.project.pyscripts_folder}<%text>/Tools/PyScript.ps1" `
-                            -moduleName "uepyscripts.tools.ci.buildgraph" `
-                            -arguments @{ 
-                                target = "${taskName}" 
-                                build_tag = "${BUILD_TAG}"
-                                string_arguments = "${buildgraph_properties}"
-                            }
+                        ."</%text>${feature_config.project.pyscripts_folder}<%text>/.venv/Scripts/ue-ci-run-buildgraph.exe" `
+                        --target="${taskName}" `
+                        --build_tag="${build_tag}" `</%text>
+                        ${feature_config._accumulator['buildgraph_properties']}<%text>
                     """
                     </%text>
 
@@ -102,15 +99,12 @@ def cleanup() {
 
         ${utils.get_workspace()} 
         {
-            checkout()
+            projectCheckout()
 
             stage ( "Cleanup" ) {
+                activatePythonEnvironment()
                 <%text>pwsh """
-                    ."</%text>${feature_config.project.pyscripts_folder}<%text>/Tools/PyScript.ps1" `
-                        -moduleName "uepyscripts.tools.ci.cleanup" `
-                        -arguments @{ 
-                            build_tag = "${BUILD_TAG}"
-                        }
+                    ."</%text>${feature_config.project.pyscripts_folder}<%text>/.venv/Scripts/ue-ci-cleanup.exe" --build_tag="${BUILD_TAG}"
                 """
                 </%text>
             }
@@ -128,6 +122,8 @@ def postCleanupTasks() {
 }
 
 def preBuildGraphTasks() {
+    activatePythonEnvironment()
+
     fileOperations( 
         [ 
             fileDeleteOperation( excludes: '', includes: 'Saved\\Jenkins\\*.txt' ),
@@ -145,5 +141,12 @@ def postBuildGraphTasks( String taskName ) {
     % if global_values['customization'].get('unreal_postBuildGraphTasks'):
     <%include file="${global_values['customization']['unreal_postBuildGraphTasks']}"/>
     % endif
+}
+
+def activatePythonEnvironment() {
+    <%text>pwsh """
+        ."</%text>${feature_config.project.pyscripts_folder}<%text>/setup_venv.ps1"
+    """
+    </%text>
 }
 </%def>
