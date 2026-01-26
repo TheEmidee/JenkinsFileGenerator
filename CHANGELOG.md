@@ -8,6 +8,19 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.8.0] - 2026-01-26
+
+### Changed
+
+- Updated the unreal feature to now pass arguments without using JSON strings
+  Renamed the git additional function `checkout` to `projectCheckout` to avoid naming collision with the function from the jenkins git plugin ([#27](https://github.com/TheEmidee/JenkinsFileGenerator/issues/27))
+
+### Fixed
+
+- Fixed the git feature which would output garbage characters for the submodule options ([#27](https://github.com/TheEmidee/JenkinsFileGenerator/issues/27))
+- Fixed the `archive` feature to now use PyScript's script aliases ([#28](https://github.com/TheEmidee/JenkinsFileGenerator/issues/28))
+
+
 ## [1.7.1] - 2026-01-22
 
 ### Changed
