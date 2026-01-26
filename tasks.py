@@ -235,6 +235,11 @@ def create_release(c: Context, version: Optional[str] = None) -> None:
     run_command(c, "git add .")
     run_command(c, f'git commit -m "Release {version}"')
 
+    confirm = input(f"\nCreate tag {version} and push? (yes/no): ").strip().lower()
+    if confirm not in ["yes", "y"]:
+        print("Release cancelled.")
+        return
+
     # Create tag
     print(f"\nCreating tag {version}...")
     run_command(c, f'git tag -a {version} -m "Release {version}"')
