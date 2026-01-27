@@ -4,6 +4,9 @@ def activatePythonEnvironment() {
 }
 
 def executePythonScript(String scriptName, String arguments) {
-    pwsh "${feature_config.venv_folder}Scripts/<%text>${scriptName}.exe ${arguments}</%text>"
+    pwsh """
+        . "Scripts/Python/.venv/Scripts/<%text>${scriptName}.exe" `
+        ${arguments}</%text>
+"""
 }
 </%def>

@@ -67,11 +67,11 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     ${pre_task}
                     % endfor
 
-                    def build_tag = BUILD_TAG.replace(" ", "_")
+                    def build_tag = getSanitizedBuildTag()
 
-                    def properties = """
-<%text>--target="${taskName}" 
---build_tag="${build_tag}"</%text> 
+                    // It's important to NOT have an end of line before the first argument otherwise Jenkins will fail to execute the posh script
+                    def properties = """<%text>--target="${taskName}" `
+--build_tag="${build_tag}"</%text> `
 ${feature_config._accumulator['buildgraph_properties']}
 """
 
@@ -104,7 +104,8 @@ def cleanup() {
             stage ( "Cleanup" ) {
                 activatePythonEnvironment()
 
-                executePythonScript( "ue-ci-cleanup", <%text>"--build_tag=${BUILD_TAG}"</%text> )
+                def build_tag = getSanitizedBuildTag()
+                executePythonScript( "ue-ci-cleanup", <%text>"--build_tag=${build_tag}"</%text> )
             }
 
             postCleanupTasks()
@@ -139,5 +140,9 @@ def postBuildGraphTasks( String taskName ) {
     % if global_values['customization'].get('unreal_postBuildGraphTasks'):
     <%include file="${global_values['customization']['unreal_postBuildGraphTasks']}"/>
     % endif
+}
+
+def getSanitizedBuildTag() {
+    return BUILD_TAG.replace(" ", "_")
 }
 </%def>

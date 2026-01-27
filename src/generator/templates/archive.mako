@@ -29,11 +29,12 @@ def archivePackages() {
             def rotate_archives_output_file_path = "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
 
             stage ( "Rotate Archives" ) {
-                executePythonScript( "gamedevtool-archives-rotate", """
-                --directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" 
-                --keep_count="${feature_config.rotate_archives.keep_count}" 
-                <%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
-                """ )
+                def properties = """--directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" `
+--keep_count="${feature_config.rotate_archives.keep_count}" `
+<%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
+"""
+
+                executePythonScript( "gamedevtool-archives-rotate", properties )
 
                 % if feature_config.rotate_archives.slack and feature_config.rotate_archives.slack.enabled:
                 <%text>def foldername = readFile "${rotate_archives_output_file_path}"</%text>
@@ -52,17 +53,17 @@ def archivePackages() {
                 % endif
 
                 def uploaded_files_output_path = "${feature_config.upload_archives.output_file_name.as_posix()}"
+                def properties = """<%text>--local_folder="${file}"</%text> `
+--bucket_name="${feature_config.upload_archives.bucket_name}" `
+--region="${feature_config.upload_archives.region}" `
+--access_key="${feature_config.upload_archives.access_key}" `
+--secret_key="${feature_config.upload_archives.secret_key}" `
+--destination_folder="${feature_config.upload_archives.destination_folder}" `
+--keep_count="${feature_config.upload_archives.keep_count}" `
+<%text>--output_file="${uploaded_files_output_path}"</%text>
+"""
 
-                executePythonScript( "gamedevtool-archives-upload", """
-                <%text>--local_folder="${file}"</%text>
-                --bucket_name="${feature_config.upload_archives.bucket_name}"
-                --region="${feature_config.upload_archives.region}"
-                --access_key="${feature_config.upload_archives.access_key}"
-                --secret_key="${feature_config.upload_archives.secret_key}"
-                --destination_folder="${feature_config.upload_archives.destination_folder}"
-                --keep_count="${feature_config.upload_archives.keep_count}"
-                <%text>--output_file="${uploaded_files_output_path}"</%text>
-                """ )
+                executePythonScript( "gamedevtool-archives-upload", properties )
 
                 % if feature_config.upload_archives.slack and feature_config.upload_archives.slack.enabled:
                 <%text>def uploaded_files = readFile "${uploaded_files_output_path}"</%text>

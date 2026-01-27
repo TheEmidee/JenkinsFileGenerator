@@ -147,7 +147,7 @@ class UnrealFeature(BaseFeature):
             buildgraph_properties: str = ""
             if unreal_config.buildgraph.properties is not None:
                 lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
-                buildgraph_properties += " \n".join(lines)
+                buildgraph_properties += " `\n".join(lines)
 
             context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
 
