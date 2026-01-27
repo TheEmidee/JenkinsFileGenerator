@@ -34,7 +34,7 @@ def archivePackages() {
 <%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
 """
 
-                executePythonScript( "gamedevtool-archives-rotate", properties )
+                executePythonScript( "gamedevtools-archives-rotate", properties )
 
                 % if feature_config.rotate_archives.slack and feature_config.rotate_archives.slack.enabled:
                 <%text>def foldername = readFile "${rotate_archives_output_file_path}"</%text>
@@ -63,7 +63,7 @@ def archivePackages() {
 <%text>--output_file="${uploaded_files_output_path}"</%text>
 """
 
-                executePythonScript( "gamedevtool-archives-upload", properties )
+                executePythonScript( "gamedevtools-archives-upload", properties )
 
                 % if feature_config.upload_archives.slack and feature_config.upload_archives.slack.enabled:
                 <%text>def uploaded_files = readFile "${uploaded_files_output_path}"</%text>
