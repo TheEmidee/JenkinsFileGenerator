@@ -8,6 +8,29 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.9.0] - 2026-01-27
+
+### Removed
+
+- Removed the pyscripts config from unreal ([#32](https://github.com/TheEmidee/JenkinsFileGenerator/issues/32))
+
+### Added
+
+- Added python feature ([#29](https://github.com/TheEmidee/JenkinsFileGenerator/issues/29))
+
+### Changed
+
+- Updated the archive feature to execute its scripts through the python feature ([#28](https://github.com/TheEmidee/JenkinsFileGenerator/issues/28))
+- Updated the unreal feature to execute its scripts through the python feature ([#29](https://github.com/TheEmidee/JenkinsFileGenerator/issues/29))
+- The unreal feature will sort the tasks of each parallel group alphabetically ([#31](https://github.com/TheEmidee/JenkinsFileGenerator/issues/31))
+
+### Fixed
+
+- Fixed an issue in the unreal feature which would not call `projectCheckout`
+  Fixed an issue where failing to generate the buildgraph export file would not fail the jenkinsfile generation
+  Fixed the properties feature which would not output anything in the final groovy ([#32](https://github.com/TheEmidee/JenkinsFileGenerator/issues/32))
+
+
 ## [1.8.0] - 2026-01-26
 
 ### Changed
