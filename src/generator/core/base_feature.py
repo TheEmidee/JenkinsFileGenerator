@@ -82,6 +82,7 @@ class BaseFeature(ABC):
                 pass
             except Exception as e:
                 logger.error("Error rendering %s for %s : %s", block_type, self.feature_name, e, exc_info=e)
+                raise e
 
         return blocks
 

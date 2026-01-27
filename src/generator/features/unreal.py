@@ -167,7 +167,10 @@ class UnrealFeature(BaseFeature):
 
         process = subprocess.Popen(args, stdout=subprocess.PIPE)
 
-        process.wait()
+        result = process.wait()
+
+        if result != 0:
+            raise RuntimeError(f"Buildgraph export command failed with exit code {result}")
 
         return export_path
 
