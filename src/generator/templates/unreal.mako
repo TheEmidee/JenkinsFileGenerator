@@ -57,7 +57,7 @@ def runBuildGraph( groupName, taskNames, platform ) {
         
         ${utils.get_workspace()}
         {
-            def scmVars = checkout()
+            projectCheckout()
 
             taskNames.each { String taskName ->
                 stage( taskName ) {
