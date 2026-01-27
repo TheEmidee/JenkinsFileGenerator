@@ -28,9 +28,8 @@ it will read them from the shared storage directory.
 the disk with old results, and to make sure that there are no artifacts left from previous jobs.
 """
 
-import importlib
-import os
-import sys
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
 
@@ -81,18 +80,10 @@ class UnrealProjectConfig(BaseModel):
     """Configuration model for the project section of Unreal."""
 
     uproject_path: Path = Field(description="The path to the .uproject file of the Unreal project.")
-    pyscripts_folder: str = Field(
-        default_factory=lambda: "",
-        description="Path to the PyScripts folder if it's not at the root of the uproject",
-    )
 
     def get_uproject_folder_path(self) -> Path:
         """Get the absolute path to the uproject folder."""
         return self.uproject_path.parent.resolve()
-
-    def get_absolute_pyscripts_folder_path(self) -> Path:
-        """Get the absolute path to the uproject file."""
-        return (self.get_uproject_folder_path() / self.pyscripts_folder).resolve()
 
     # Done like this to make it optional in the config file
     # but will try to be set to a relative path from the uproject_path
@@ -100,7 +91,7 @@ class UnrealProjectConfig(BaseModel):
     @model_validator(mode="after")
     def validate_model(self, info: ValidationInfo) -> "UnrealProjectConfig":
         """Validation of the project config model
-        and try to resolve paths to the uproject file and pyscripts folder."""
+        and try to resolve paths to the uproject file."""
         if not info.context or not info.context.config_file_path:
             raise ValueError("A context with a config_file_path is required")
 
@@ -118,20 +109,6 @@ class UnrealProjectConfig(BaseModel):
 
         logger.info("Resolved uproject_path: %s", self.uproject_path)
 
-        if self.pyscripts_folder is None:
-            logger.debug("pyscripts_folder is not set. Default to PyScripts")
-            self.pyscripts_folder = Path("PyScripts")
-
-        uproject_path = self.uproject_path
-        if uproject_path is None:
-            raise ValueError("uproject_path must be validated before pyscripts_folder")
-
-        absolute_pyscripts_folder = self.get_absolute_pyscripts_folder_path()
-
-        if not absolute_pyscripts_folder.is_dir():
-            raise ValueError(f"Pyscripts folder not found at {absolute_pyscripts_folder}.")
-
-        logger.info("Resolved pyscripts_folder: %s", self.pyscripts_folder)
         return self
 
 
@@ -156,11 +133,11 @@ class UnrealFeature(BaseFeature):
 
     @property
     def dependencies(self) -> List[str]:
-        return ["utils"]
+        return ["python", "utils"]
 
     def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs = self.get_jenkins_jobs(cast(UnrealConfig, context.feature_config))
+            jenkins_jobs = self.get_jenkins_jobs(context)
             context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
@@ -176,28 +153,31 @@ class UnrealFeature(BaseFeature):
 
         return super().render_block(block_type, context, template)
 
-    def get_jenkins_jobs(self, config: UnrealConfig) -> str:
-        """Generate the Jenkins jobs for Unreal."""
-        module_path = config.project.get_absolute_pyscripts_folder_path() / "src"
-        module_name = "uepyscripts.run.buildgraph"
+    def _generate_buildgraph_export_file(self, context: TemplateContext) -> Path:
+        config: UnrealConfig = cast(UnrealConfig, context.feature_config)
+        temp_dir: Path = Path(tempfile.gettempdir())
+        export_path = temp_dir.joinpath("buildgraph.json")
 
-        abs_package_root = os.path.abspath(module_path)
-        if abs_package_root not in sys.path:
-            sys.path.insert(0, abs_package_root)
+        cwd = str(config.project.get_uproject_folder_path() / f"{context.full_config.features['python']['venv_folder']}/Scripts/")
 
-        uepyscripts = importlib.import_module(module_name)
-
-        temp_folder = uepyscripts.project.project_folders.saved_folders.temp
-        temp_folder.mkdir(parents=True, exist_ok=True)
-
-        export_path = temp_folder.joinpath("buildgraph.json")
-
-        args = [f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
+        args: List[str] = [f"{cwd}/ue-run-buildgraph.exe", f"--target={config.buildgraph.target}", f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
 
         if config.buildgraph.properties:
             args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
 
-        uepyscripts.run(config.buildgraph.target, args)
+        process = subprocess.Popen(args, stdout=subprocess.PIPE)
+
+        result = process.wait()
+
+        if result != 0:
+            raise RuntimeError(f"Buildgraph export command failed with exit code {result}")
+
+        return export_path
+
+    def get_jenkins_jobs(self, context: TemplateContext) -> str:
+        """Generate the Jenkins jobs for Unreal."""
+
+        export_path = self._generate_buildgraph_export_file(context)
 
         class UnrealBuildgraphJsonOutput_Notify(BaseModel):
             """Notification configuration for a node."""

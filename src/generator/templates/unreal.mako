@@ -57,7 +57,7 @@ def runBuildGraph( groupName, taskNames, platform ) {
         
         ${utils.get_workspace()}
         {
-            def scmVars = checkout()
+            projectCheckout()
 
             taskNames.each { String taskName ->
                 stage( taskName ) {
@@ -67,15 +67,15 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     ${pre_task}
                     % endfor
 
-                    def build_tag = BUILD_TAG.replace(" ", "_")
+                    def build_tag = getSanitizedBuildTag()
 
-                    <%text>pwsh """
-                        ."</%text>${feature_config.project.pyscripts_folder}<%text>/.venv/Scripts/ue-ci-run-buildgraph.exe" `
-                        --target="${taskName}" `
-                        --build_tag="${build_tag}" `</%text>
-                        ${feature_config._accumulator['buildgraph_properties']}<%text>
-                    """
-                    </%text>
+                    // It's important to NOT have an end of line before the first argument otherwise Jenkins will fail to execute the posh script
+                    def properties = """<%text>--target="${taskName}" `
+--build_tag="${build_tag}"</%text> `
+${feature_config._accumulator['buildgraph_properties']}
+"""
+
+                    executePythonScript( "ue-ci-run-buildgraph", properties )
 
                     postBuildGraphTasks( taskName )
                 }
@@ -103,10 +103,9 @@ def cleanup() {
 
             stage ( "Cleanup" ) {
                 activatePythonEnvironment()
-                <%text>pwsh """
-                    ."</%text>${feature_config.project.pyscripts_folder}<%text>/.venv/Scripts/ue-ci-cleanup.exe" --build_tag="${BUILD_TAG}"
-                """
-                </%text>
+
+                def build_tag = getSanitizedBuildTag()
+                executePythonScript( "ue-ci-cleanup", <%text>"--build_tag=${build_tag}"</%text> )
             }
 
             postCleanupTasks()
@@ -143,10 +142,7 @@ def postBuildGraphTasks( String taskName ) {
     % endif
 }
 
-def activatePythonEnvironment() {
-    <%text>pwsh """
-        ."</%text>${feature_config.project.pyscripts_folder}<%text>/setup_venv.ps1"
-    """
-    </%text>
+def getSanitizedBuildTag() {
+    return BUILD_TAG.replace(" ", "_")
 }
 </%def>

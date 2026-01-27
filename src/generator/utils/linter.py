@@ -13,7 +13,7 @@ def lint_jenkinsfile(output_file: Path) -> None:
 
         cmd = ["npx.cmd", "npm-groovy-lint", "--format", str(output_file)]
 
-        result = subprocess.run(cmd, capture_output=False, text=True, check=True)
+        result = subprocess.run(cmd, capture_output=False, shell=False)
         logger.info("Linting completed successfully")
         if result.stdout:
             logger.info("Lint output: %s", result.stdout)

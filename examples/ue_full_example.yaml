@@ -42,10 +42,12 @@ features:
         credentials_id:
           id: "Jenkinsmygame"
           url: "git@github.com:MyCompany/mygame.git"
+  python:
+    venv_activation_script_path: "Scripts/Python/setup-venv.ps1"
+    venv_folder: "Scripts/Python/.venv"
   unreal:
     project:
       uproject_path: "../../../../mygame.uproject"
-      pyscripts_folder: "Scripts/PyScripts"
     buildgraph:
       target: "BuildAndTest mygame"
       properties:

@@ -5,7 +5,9 @@ For example:
 buildDiscarder( logRotator( numToKeepStr: '10' ) )
 """
 
-from typing import Any, ClassVar, Dict, List, Type
+from typing import Any, Dict, List, Type
+
+from pydantic import Field
 
 from generator.core.base_feature import BaseFeature, FeatureConfig
 
@@ -13,7 +15,7 @@ from generator.core.base_feature import BaseFeature, FeatureConfig
 class PropertiesConfig(FeatureConfig):
     """Configuration for the pipeline properties."""
 
-    items: ClassVar[List[str]] = []
+    items: List[str] = Field(default_factory=list)
 
 
 class PropertiesFeature(BaseFeature):

@@ -23,18 +23,21 @@ def archivePackages() {
         ${utils.get_workspace()} 
         {
             projectCheckout()
+            activatePythonEnvironment()
 
             % if feature_config.rotate_archives.enabled:
+            def rotate_archives_output_file_path = "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+
             stage ( "Rotate Archives" ) {
-                pwsh """
-                    . "${full_config.features['unreal']['project']['pyscripts_folder']}/.venv/Scripts/ue-tools-archives-rotate.exe" `
-                    --directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" `
-                    --keep_count="${feature_config.rotate_archives.keep_count}" `
-                    --folder_output_file_name="${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
-                """
+                def properties = """--directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" `
+--keep_count="${feature_config.rotate_archives.keep_count}" `
+<%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
+"""
+
+                executePythonScript( "gamedevtools-archives-rotate", properties )
 
                 % if feature_config.rotate_archives.slack and feature_config.rotate_archives.slack.enabled:
-                def foldername = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+                <%text>def foldername = readFile "${rotate_archives_output_file_path}"</%text>
                 slackSend( channel: "${feature_config.rotate_archives.slack.channel}", message: "${feature_config.rotate_archives.slack.message_template}" )
                 % endif
             }
@@ -44,25 +47,26 @@ def archivePackages() {
 
             stage ( "Upload Archives" ) {
                 % if feature_config.rotate_archives.enabled:
-                def file = readFile "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
+                <%text>def file = readFile "${rotate_archives_output_file_path}"</%text>
                 % else:
                 def file = "${feature_config.upload_archives.local_folder}"
                 % endif
 
-                pwsh """
-                    . "${full_config.features['unreal']['project']['pyscripts_folder']}/.venv/Scripts/ue-tools-archives-upload.exe" `
-                    <%text>--local_folder="${file}"</%text> `
-                    --bucket_name="${feature_config.upload_archives.bucket_name}" `
-                    --region="${feature_config.upload_archives.region}" `
-                    --access_key="${feature_config.upload_archives.access_key}" `
-                    --secret_key="${feature_config.upload_archives.secret_key}" `
-                    --destination_folder="${feature_config.upload_archives.destination_folder}" `
-                    --keep_count="${feature_config.upload_archives.keep_count}" `
-                    --output_file="${feature_config.upload_archives.output_file_name.as_posix()}"
-                """
+                def uploaded_files_output_path = "${feature_config.upload_archives.output_file_name.as_posix()}"
+                def properties = """<%text>--local_folder="${file}"</%text> `
+--bucket_name="${feature_config.upload_archives.bucket_name}" `
+--region="${feature_config.upload_archives.region}" `
+--access_key="${feature_config.upload_archives.access_key}" `
+--secret_key="${feature_config.upload_archives.secret_key}" `
+--destination_folder="${feature_config.upload_archives.destination_folder}" `
+--keep_count="${feature_config.upload_archives.keep_count}" `
+<%text>--output_file="${uploaded_files_output_path}"</%text>
+"""
+
+                executePythonScript( "gamedevtools-archives-upload", properties )
 
                 % if feature_config.upload_archives.slack and feature_config.upload_archives.slack.enabled:
-                def uploaded_files = readFile "${feature_config.upload_archives.output_file_name.as_posix()}"
+                <%text>def uploaded_files = readFile "${uploaded_files_output_path}"</%text>
                 def lines = uploaded_files.split('\n')
 
                 if ( lines.size() > 0 ) {

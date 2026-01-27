@@ -76,12 +76,13 @@ class BaseFeature(ABC):
             try:
                 block = self.render_block(block_type, context, template)
                 block_value.append(block)
-            except AttributeError:
+            except AttributeError:  # as e:
                 # print(e)
                 # Block not defined in template - that's OK
                 pass
             except Exception as e:
                 logger.error("Error rendering %s for %s : %s", block_type, self.feature_name, e, exc_info=e)
+                raise e
 
         return blocks
 
