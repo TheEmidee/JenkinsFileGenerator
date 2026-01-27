@@ -81,7 +81,7 @@ class UnrealProjectConfig(BaseModel):
     """Configuration model for the project section of Unreal."""
 
     uproject_path: Path = Field(description="The path to the .uproject file of the Unreal project.")
-    
+
     def get_uproject_folder_path(self) -> Path:
         """Get the absolute path to the uproject folder."""
         return self.uproject_path.parent.resolve()
