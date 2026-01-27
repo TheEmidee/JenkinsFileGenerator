@@ -76,8 +76,8 @@ class BaseFeature(ABC):
             try:
                 block = self.render_block(block_type, context, template)
                 block_value.append(block)
-            except AttributeError as e:
-                print(e)
+            except AttributeError:  # as e:
+                # print(e)
                 # Block not defined in template - that's OK
                 pass
             except Exception as e:

@@ -28,9 +28,8 @@ it will read them from the shared storage directory.
 the disk with old results, and to make sure that there are no artifacts left from previous jobs.
 """
 
-import importlib
-import os
-import sys
+import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
 
@@ -138,7 +137,7 @@ class UnrealFeature(BaseFeature):
 
     def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs = self.get_jenkins_jobs(cast(UnrealConfig, context.feature_config))
+            jenkins_jobs = self.get_jenkins_jobs(context)
             context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
@@ -154,28 +153,28 @@ class UnrealFeature(BaseFeature):
 
         return super().render_block(block_type, context, template)
 
-    def get_jenkins_jobs(self, config: UnrealConfig) -> str:
-        """Generate the Jenkins jobs for Unreal."""
-        module_path = config.project.get_absolute_pyscripts_folder_path() / "src"
-        module_name = "uepyscripts.run.buildgraph"
+    def _generate_buildgraph_export_file(self, context: TemplateContext) -> Path:
+        config: UnrealConfig = cast(UnrealConfig, context.feature_config)
+        temp_dir: Path = Path(tempfile.gettempdir())
+        export_path = temp_dir.joinpath("buildgraph.json")
 
-        abs_package_root = os.path.abspath(module_path)
-        if abs_package_root not in sys.path:
-            sys.path.insert(0, abs_package_root)
+        cwd = str(config.project.get_uproject_folder_path() / f"{context.full_config.features['python']['venv_folder']}/Scripts/")
 
-        uepyscripts = importlib.import_module(module_name)
-
-        temp_folder = uepyscripts.project.project_folders.saved_folders.temp
-        temp_folder.mkdir(parents=True, exist_ok=True)
-
-        export_path = temp_folder.joinpath("buildgraph.json")
-
-        args = [f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
+        args: List[str] = [f"{cwd}/ue-run-buildgraph.exe", f"--target={config.buildgraph.target}", f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
 
         if config.buildgraph.properties:
             args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
 
-        uepyscripts.run(config.buildgraph.target, args)
+        process = subprocess.Popen(args, stdout=subprocess.PIPE)
+
+        process.wait()
+
+        return export_path
+
+    def get_jenkins_jobs(self, context: TemplateContext) -> str:
+        """Generate the Jenkins jobs for Unreal."""
+
+        export_path = self._generate_buildgraph_export_file(context)
 
         class UnrealBuildgraphJsonOutput_Notify(BaseModel):
             """Notification configuration for a node."""
