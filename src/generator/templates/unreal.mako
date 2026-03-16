@@ -160,7 +160,7 @@ def runSetupScript() {
         echo "Running setup script for build tag '${currentBuildTag}'..."
         pwsh 'New-Item -ItemType Directory -Force -Path Saved'
         writeFile file: setupJobIdFile, text: currentBuildTag
-        pwsh script: "${WORKSPACE}/Setup.ps1"
+        pwsh script: "${WORKSPACE}/Setup.ps1 -BuildMachine"
     }
 }
 
