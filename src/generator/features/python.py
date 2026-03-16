@@ -6,7 +6,7 @@ This feature will create 2 additional functions:
 * executePythonScript which will execute an executable in the virtual environment's Scripts folder
 """
 
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional, Type
 
 from pydantic import Field, ValidationInfo, model_validator
 
@@ -16,11 +16,12 @@ from generator.core.base_feature import BaseFeature, FeatureConfig
 class PythonConfig(FeatureConfig):
     """Configuration for the pipeline properties."""
 
-    venv_activation_script_path: str = Field(
+    venv_activation_script_path: Optional[str] = Field(
+        default=None,
         description=(
             "The path to the virtual environment activation script."
             "This must point to a script that can be sourced to activate the virtual environment."
-        )
+        ),
     )
     venv_folder: str = Field(
         description="The path to the virtual environment folder after it has been created by executing venv_activation_script_path.",
