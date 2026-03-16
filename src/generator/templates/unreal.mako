@@ -143,7 +143,7 @@ def postBuildGraphTasks( String taskName ) {
 }
 
 def runSetupScript() {
-    def setupJobIdFile = "${WORKSPACE}/Saved/JenkinsSetupScriptJobId.txt"
+    <%text>def setupJobIdFile = "${WORKSPACE}/Saved/JenkinsSetupScriptJobId.txt"</%text>
     def currentBuildTag = getSanitizedBuildTag()
 
     def shouldRunSetup = true
@@ -151,16 +151,16 @@ def runSetupScript() {
     if (fileExists(setupJobIdFile)) {
         def existingTag = readFile(setupJobIdFile).trim()
         if (existingTag == currentBuildTag) {
-            echo "Setup already ran for build tag '${currentBuildTag}'. Skipping."
+            <%text>echo "Setup already ran for build tag '${currentBuildTag}'. Skipping."</%text>
             shouldRunSetup = false
         }
     }
 
     if (shouldRunSetup) {
-        echo "Running setup script for build tag '${currentBuildTag}'..."
+        <%text>echo "Running setup script for build tag '${currentBuildTag}'..."</%text>
         pwsh 'New-Item -ItemType Directory -Force -Path Saved'
         writeFile file: setupJobIdFile, text: currentBuildTag
-        pwsh script: "${WORKSPACE}/Setup.ps1 -BuildMachine"
+        <%text>pwsh script: "${WORKSPACE}/Setup.ps1 -BuildMachine"</%text>
     }
 }
 
