@@ -102,7 +102,7 @@ def cleanup() {
             projectCheckout()
 
             stage ( "Cleanup" ) {
-                activatePythonEnvironment()
+                runSetupScript()
 
                 def build_tag = getSanitizedBuildTag()
                 executePythonScript( "ue-ci-cleanup", <%text>"--build_tag=${build_tag}"</%text> )
@@ -121,7 +121,7 @@ def postCleanupTasks() {
 }
 
 def preBuildGraphTasks() {
-    activatePythonEnvironment()
+    runSetupScript()
 
     fileOperations( 
         [ 
@@ -140,6 +140,28 @@ def postBuildGraphTasks( String taskName ) {
     % if global_values['customization'].get('unreal_postBuildGraphTasks'):
     <%include file="${global_values['customization']['unreal_postBuildGraphTasks']}"/>
     % endif
+}
+
+def runSetupScript() {
+    <%text>def setupJobIdFile = "${WORKSPACE}/Saved/JenkinsSetupScriptJobId.txt"</%text>
+    def currentBuildTag = getSanitizedBuildTag()
+
+    def shouldRunSetup = true
+
+    if (fileExists(setupJobIdFile)) {
+        def existingTag = readFile(setupJobIdFile).trim()
+        if (existingTag == currentBuildTag) {
+            <%text>echo "Setup already ran for build tag '${currentBuildTag}'. Skipping."</%text>
+            shouldRunSetup = false
+        }
+    }
+
+    if (shouldRunSetup) {
+        <%text>echo "Running setup script for build tag '${currentBuildTag}'..."</%text>
+        pwsh 'New-Item -ItemType Directory -Force -Path Saved'
+        writeFile file: setupJobIdFile, text: currentBuildTag
+        <%text>pwsh script: "${WORKSPACE}/Setup.ps1 -BuildMachine"</%text>
+    }
 }
 
 def getSanitizedBuildTag() {
