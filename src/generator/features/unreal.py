@@ -1,6 +1,7 @@
 """This feature works by using Buildgraph in an Unreal Engine project.
-It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts,
-which can be inside your game project or in a separate folder.
+It requires that you use
+* UEProjectBootStrap : https://github.com/TheEmidee/UEProjectBootstrap
+* PyScripts https://github.com/TheEmidee/UEPyScripts
 
 In a nutshell, this is how this feature works:
 1. Before generating any text to output in the Jenkinsfile, this feature will run the
@@ -26,6 +27,9 @@ and will write the results to the shared storage directory.
 it will read them from the shared storage directory.
 5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering
 the disk with old results, and to make sure that there are no artifacts left from previous jobs.
+
+Note that the script Setup.ps1 created by UEProjectBoostrap will be called when needed before any unreal task is executed
+to ensure that all the requirements (such as Python and the required moduldes) are installed on the machine.
 """
 
 import subprocess
