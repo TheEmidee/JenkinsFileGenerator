@@ -367,6 +367,19 @@ The feature will be automatically discovered and available for use in configurat
 
 ## Development
 
+- Install [Astral UV](https://docs.astral.sh/uv/)
+- Setup dev environment and install dependencies:
+
+  ```powershell
+  .\setup-venv.ps1
+  ```
+
+- Linting & formatting
+  - Use `uv run ruff check .` and `uv run ruff format .` Add checks to CI as required.
+  - Use `uv run mypy .`
+
+To create a new release, you must be on the `develop` branch, and call `invoke create_release`
+
 ### Project Structure
 
 ```
@@ -394,14 +407,6 @@ generator/
 2. Create your template in `generator/templates/`
 3. The feature will be automatically discovered and registered
 4. Run `--generate_documentation` to update docs
-
-### Code validation
-
-You can use `ruff` with `ruff check .` and `mypy` with `mypy .` to validate that the code is correct before submitting.
-
-### Code Formatting
-
-You can use `ruff format .` to automatically reformat the code.
 
 ## License
 
