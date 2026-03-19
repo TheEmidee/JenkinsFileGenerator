@@ -8,6 +8,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.9.1] - 2026-03-19
+
+### Changed
+
+- Updated the unreal feature to run Setup.ps1 from UEProjectBootStrap only when the jenkins job ID is different ([#33](https://github.com/TheEmidee/JenkinsFileGenerator/issues/33))
+
+
 ## [1.9.0] - 2026-01-27
 
 ### Removed
