@@ -62,7 +62,7 @@ class UnrealBuildGraphConfig(BaseModel):
         description="Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments.",
     )
     pre_tasks: Optional[List[str]] = Field(
-        default=None,
+        default=[],
         description="List of tasks to run before the buildgraph tasks.",
     )
 
