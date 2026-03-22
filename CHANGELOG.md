@@ -8,6 +8,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.9.2] - 2026-03-22
+
+### Fixed
+
+- Fixed crash inside the unreal feature when pre_tasks is not set ([#35](https://github.com/TheEmidee/JenkinsFileGenerator/issues/35))
+
+
 ## [1.9.1] - 2026-03-19
 
 ### Changed
