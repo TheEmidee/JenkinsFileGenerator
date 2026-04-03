@@ -43,7 +43,7 @@ from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_va
 from generator import logger
 from generator.core.base_feature import BaseFeature, FeatureConfig
 from generator.core.template_context import TemplateContext
-from generator.utils.graph import Graph
+from generator.utils.graph import build_dependency_graph
 
 
 class UnrealBuildGraphConfig(BaseModel):
@@ -235,22 +235,15 @@ class UnrealFeature(BaseFeature):
 
             @model_validator(mode="after")
             def create_parallel_groups(self) -> "UnrealBuildgraphJsonOutput_BuildAgent":
-                job_to_group: dict[str, str] = {}
-
-                for group in self.groups.values():
-                    for node in group.nodes:
-                        job_to_group.update({node.name: group.name})
-
-                g = Graph()
+                groups: dict[str, list[str]] = {group.name: [node.name for node in group.nodes] for group in self.groups.values()}
+                dependencies: dict[str, list[str]] = {}
 
                 for group_name, group in self.groups.items():
                     for node in group.nodes:
                         for dependency in node.depends_on:
-                            required_group_name = job_to_group[dependency]
-                            if required_group_name != group_name:
-                                g.add_edge(group_name, required_group_name)
+                            dependencies.setdefault(node.name, []).append(dependency)
 
-                self.parallel_groups = g.topological_sort_with_hierarchy()
+                self.parallel_groups = build_dependency_graph(groups, dependencies)
 
                 return self
 
