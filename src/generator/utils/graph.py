@@ -3,75 +3,72 @@
 from collections import defaultdict, deque
 
 
-class Graph:
-    """A simple directed graph implementation for topological sorting."""
+def build_dependency_graph(groups: dict[str, list[str]], dependencies: dict[str, list[str]]) -> list[list[str]]:
+    """
+    Topologically sort groups based on inter-group job dependencies,
+    returning batches of groups that can run in parallel.
 
-    def __init__(self) -> None:
-        self.graph: dict[str, list[str]] = defaultdict(list)
-        self.nodes: set[str] = set()
+    Args:
+        groups: {"group_a": ["job_1", "job_2"], "group_b": ["job_3"], ...}
+        dependencies: {"job_3": ["job_1", "job_2"], ...}  # job -> list of jobs it depends on
 
-    def add_edge(self, u: str, v: str) -> None:
-        """Add a directed edge from node u to node v."""
-        self.graph[u].append(v)
-        self.nodes.add(u)
-        self.nodes.add(v)
+    Returns:
+        List of batches, e.g. [["group_a"], ["group_b", "group_c"], ["group_d"]]
+        Groups within the same batch can run in parallel.
+    """
+    # Build a reverse map: job -> its group
+    job_to_group = {}
+    for group, jobs in groups.items():
+        for job in jobs:
+            job_to_group[job] = group
 
-    def calculate_in_degree(self) -> dict[str, int]:
-        """Calculate in-degree for each node in the graph."""
-        in_degree = {node: 0 for node in self.nodes}
-        for node in self.graph:
-            for neighbor in self.graph[node]:
-                in_degree[neighbor] += 1
-        return in_degree
+    # Build group-level dependency edges
+    # group_deps[A] = set of groups that A depends on
+    group_deps: dict[str, set[str]] = {group: set() for group in groups}
 
-    def get_nodes_with_no_dependencies(self) -> list[str]:
-        """Get nodes that have no incoming edges (dependencies)."""
-        keys = set(self.graph.keys())
-        values = [item for sublist in self.graph.values() for item in sublist]
-        items_in_values_not_in_keys = set(values) - keys
-        return list(items_in_values_not_in_keys)
+    for job, dep_jobs in dependencies.items():
+        dependent_group = job_to_group.get(job)
+        if dependent_group is None:
+            raise ValueError(f"Job '{job}' not found in any group")
 
-    def topological_sort_with_hierarchy(self) -> list[list[str]]:
-        """Perform a topological sort and return nodes grouped by hierarchy.
-        This is a different implementation than the standard because we extract all the
-        tasks that have no dependency, create a separate list with them, to add them first
-        in the result
-        This makes sure we parallelize as possible at all the levels of the build pipeline
-        """
-        nodes_with_no_dependencies = self.get_nodes_with_no_dependencies()
+        for dep_job in dep_jobs:
+            dep_group = job_to_group.get(dep_job)
+            if dep_group is None:
+                raise ValueError(f"Dependency job '{dep_job}' not found in any group")
 
-        # First calculate the degrees as normal
-        in_degree = self.calculate_in_degree()
+            # Only register cross-group dependencies
+            if dep_group != dependent_group:
+                group_deps[dependent_group].add(dep_group)
 
-        # Then remove the nodes and their degrees if they don't have any dependency
-        self.nodes = {item for item in self.nodes if item not in nodes_with_no_dependencies}
-        in_degree = {key: value for key, value in in_degree.items() if key not in nodes_with_no_dependencies}
+    # Kahn's algorithm — count in-degrees
+    in_degree = {group: len(deps) for group, deps in group_deps.items()}
 
-        queue = deque([node for node in in_degree if in_degree[node] == 0])
-        sorted_hierarchy: list[list[str]] = []
+    # Build reverse edges: group -> groups that depend on it
+    dependents: dict[str, set[str]] = defaultdict(set)
+    for group, deps in group_deps.items():
+        for dep in deps:
+            dependents[dep].add(group)
 
-        while queue:
-            level_size = len(queue)
-            current_level_nodes: list[str] = []
+    # Start with all groups that have no dependencies
+    queue = deque(group for group, degree in in_degree.items() if degree == 0)
+    result = []
 
-            for _ in range(level_size):
-                node = queue.popleft()
-                current_level_nodes.append(node)
+    while queue:
+        # All groups currently in the queue form a parallel batch
+        batch = list(queue)
+        queue.clear()
+        result.append(batch)
 
-                for neighbor in self.graph[node]:
-                    if neighbor in in_degree:
-                        in_degree[neighbor] -= 1
-                        if in_degree[neighbor] == 0:
-                            queue.append(neighbor)
+        for group in batch:
+            for dependent in dependents[group]:
+                in_degree[dependent] -= 1
+                if in_degree[dependent] == 0:
+                    queue.append(dependent)
 
-            sorted_hierarchy.append(current_level_nodes)
+    # Detect cycles
+    if sum(len(b) for b in result) != len(groups):
+        resolved = {g for batch in result for g in batch}
+        unresolved = set(groups) - resolved
+        raise ValueError(f"Cycle detected among groups: {unresolved}")
 
-        if sum(len(level) for level in sorted_hierarchy) != len(self.nodes):
-            return list[list[str]]()  # Graph contains a cycle
-
-        sorted_hierarchy.append(nodes_with_no_dependencies)
-        sorted_hierarchy.reverse()
-
-        # Sort all the tasks of each parallel group alphabetically for consistency
-        sorted_hierarchy = [sorted(inner) for inner in sorted_hierarchy]
-        return sorted_hierarchy
+    return result
