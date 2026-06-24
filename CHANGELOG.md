@@ -8,6 +8,19 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.10.0] - 2026-06-24
+
+### Added
+
+- Added retry count option for git ([#37](https://github.com/TheEmidee/JenkinsFileGenerator/issues/37))
+- Added automation config for unreal to define where to output log files ([#38](https://github.com/TheEmidee/JenkinsFileGenerator/issues/38))
+
+### Fixed
+
+- Fixed the algorithm which outputs parallel jobs for the buildgraph tasks of an unreal engine project ([#36](https://github.com/TheEmidee/JenkinsFileGenerator/issues/36))
+- Fixed documentation generation ([#39](https://github.com/TheEmidee/JenkinsFileGenerator/issues/39))
+
+
 ## [1.9.2] - 2026-03-22
 
 ### Fixed
