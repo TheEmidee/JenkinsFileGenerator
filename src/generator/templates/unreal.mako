@@ -75,13 +75,24 @@ def runBuildGraph( groupName, taskNames, platform ) {
 ${feature_config._accumulator['buildgraph_properties']}
 """
 
-                    executePythonScript( "ue-ci-run-buildgraph", properties )
+                    executeAutomationScript( "ue-ci-run-buildgraph", properties )
 
                     postBuildGraphTasks( taskName )
                 }
             }
         }
     }
+}
+
+def executeAutomationScript(String scriptName, String arguments) {
+    % if feature_config.automation.logs_folder:
+    def logFolder = "${feature_config.automation.logs_folder}"
+    <%text>withEnv( ["uebp_LogFolder=${logFolder}"] ) {</%text>
+    % endif
+    executePythonScript(scriptName, arguments)
+    % if feature_config.automation.logs_folder:
+    }
+    % endif
 }
 
 % if feature_config.cleanup_after_build.enabled:
@@ -105,7 +116,7 @@ def cleanup() {
                 runSetupScript()
 
                 def build_tag = getSanitizedBuildTag()
-                executePythonScript( "ue-ci-cleanup", <%text>"--build_tag=${build_tag}"</%text> )
+                executeAutomationScript( "ue-ci-cleanup", <%text>"--build_tag=${build_tag}"</%text> )
             }
 
             postCleanupTasks()
