@@ -2,46 +2,60 @@
 
 ```
 This feature works by using Buildgraph in an Unreal Engine project.
-It requires that you also use PyScripts https://github.com/TheEmidee/UEPyScripts, which can be inside your game project or in a separate folder.
+It requires that you use
+* UEProjectBootStrap : https://github.com/TheEmidee/UEProjectBootstrap
+* PyScripts https://github.com/TheEmidee/UEPyScripts
 
 In a nutshell, this is how this feature works:
-1. Before generating any text to output in the Jenkinsfile, this feature will run the module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties, as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
+1. Before generating any text to output in the Jenkinsfile, this feature will run the
+module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties,
+as well as the `Export` parameter. This will generate a JSON file that will contain all the tasks that need to be executed.
 2. We then read the JSON file and create a graph of tasks.
 3. We use a topological sorting algorithm to group the tasks that can be executed in parallel, respecting the dependencies.
 4. Finally, we output in the jenkinsfile an array of those tasks, and the associated functions to execute those tasks in parallel.
 
 And this is how the tasks are executed by Jenkins:
-1. Each group of tasks is passed to the generated additional function `executeJobsInParallel`, which will call the function `runBuildGraph` for each task.
-2. This function uses the module `uepyscripts.tools.ci.buildgraph` from PyScripts. This module is a wrapper around the regular uepyscripts.run.buildgraph module.
+1. Each group of tasks is passed to the generated additional function `executeJobsInParallel`,
+which will call the function `runBuildGraph` for each task.
+2. This function uses the module `uepyscripts.tools.ci.buildgraph` from PyScripts.
+This module is a wrapper around the regular uepyscripts.run.buildgraph module.
 3. This module will execute BuildGraph with the target and properties, as expected, but will pass 4 extra arguments:
 * -BuildMachine
 * -SharedStorageDir="\\path\to\shared\dir'
 * -WriteToSharedStorage,
 * -SingleNode="task_name"
-Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument, and will write the results to the shared storage directory.
-4. If later down the pipeline a task needs to read the results of a previous task, it will read them from the shared storage directory.
-5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering the disk with old results, and to make sure that there are no artifacts left from previous jobs.
+Those arguments will make buildgraph execute only the task specified by the `SingleNode` argument,
+and will write the results to the shared storage directory.
+4. If later down the pipeline a task needs to read the results of a previous task,
+it will read them from the shared storage directory.
+5. When jenkins is done, the shared storage directory is cleaned up at the end of the pipeline to avoid cluttering
+the disk with old results, and to make sure that there are no artifacts left from previous jobs.
+
+Note that the script Setup.ps1 created by UEProjectBoostrap will be called when needed before any unreal task is executed
+to ensure that all the requirements (such as Python and the required moduldes) are installed on the machine.
 ```
   * **project**: The Unreal project configuration. (  (Required) Type: `UnrealProjectConfig` )
     * **uproject_path**: The path to the .uproject file of the Unreal project. (  (Required) Type: `<class 'pathlib.Path'>` )
-
-    * **pyscripts_folder**: Path to the PyScripts folder if it's not at the root of the uproject (  Type: `<class 'pathlib.Path'>` )
 
 
   * **buildgraph**: The buildgraph configuration. (  (Required) Type: `UnrealBuildGraphConfig` )
     * **target**: The target to build with Build Graph. (  (Required) Type: `str` )
 
-    * **node_name_filters**: Filters to apply to the node names. Keys are the buildgraph task names and values are the jenkins node filter (Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine without a GPU to run the BootTest task). (  Type: `Optional[Dict[str, str]]` Default: `None` )
+    * **node_name_filters**: Filters to apply to the node names. Keys are the buildgraph task names and values are the jenkins node filter.(Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine with no GPU to run the BootTest) (  Type: `Optional[Dict[str, str]]` Default: `None` )
 
-    * **properties**: Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments to UAT. (  Type: `Optional[Dict[str, str]]` Default: `None` )
+    * **properties**: Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments. (  Type: `Optional[Dict[str, str]]` Default: `None` )
 
-    * **pre_tasks**: List of tasks to run before the buildgraph tasks. These are run as shell commands. (Ex: `'pwsh script: "Scripts/Project/CI/CI_NetUse.ps1"'`) (  Type: `Optional[List[str]]` Default: `None` )
+    * **pre_tasks**: List of tasks to run before the buildgraph tasks. (  Type: `Optional[List[str]]` Default: `[]` )
 
 
   * **cleanup_after_build**: Options to run post-buildgraph cleanup tasks. (  Type: `Optional[features.unreal.UnrealCleanupConfig]` Default: `None` )
     * **enabled**: If true, runs the cleanup tasks after the buildgraph. (  Type: `Optional[bool]` Default: `True` )
 
-    * **additional_node_name**: Additional jenkins node tags to use if you want the cleanup tasks to be executed on specific nodes. (  Type: `Optional[str]` Default: `None` )
+    * **additional_node_name**: Additional node tags to use if you want the cleanup tasks to be executed on specific nodes. (  Type: `Optional[str]` Default: `None` )
+
+
+  * **automation**: Options to configure the automation scripts. (  Type: `Optional[features.unreal.UnrealAutomationConfigConfig]` Default: `None` )
+    * **logs_folder**: Path to save the logs.This is defined by setting the environment variable uebp_LogFolder before executing any automation script.For ex: ${env.WORKSPACE}/Saved/Logs/ (  Type: `Optional[str]` Default: `` )
 
 
 [Back to main page](index.md)

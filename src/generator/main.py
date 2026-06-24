@@ -86,6 +86,9 @@ Examples:
 
     args = parser.parse_args()
 
+    if args.generate_documentation:
+        return generate_documentation()
+
     batch_mode = args.batch is not None
     manual_mode = args.config is not None or args.output is not None
 
@@ -105,9 +108,6 @@ Examples:
         logger.setLevel(logging.WARNING)
     elif args.verbose:
         logger.setLevel(logging.DEBUG)
-
-    if args.generate_documentation:
-        return generate_documentation()
 
     if args.list_features:
         return list_all_features()

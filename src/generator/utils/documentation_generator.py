@@ -312,7 +312,7 @@ class DocumentationGenerator:
         """
 
         discovered_classes = []
-        package_path = os.path.abspath("generator/features")
+        package_path = os.path.abspath("src/generator/features")
 
         # Temporarily add the parent directory to sys.path
         parent_dir = os.path.dirname(package_path)

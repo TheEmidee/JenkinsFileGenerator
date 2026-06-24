@@ -13,10 +13,10 @@ Both actions have the same behavior:
 ```
   * **additional_node_name**: Additional jenkins node tags to use if you want the archiving tasks to be executed on specific nodes. (  Type: `Optional[str]` Default: `None` )
 
-  * **rotate_archives**: Configuration for rotating archives (  Type: `RotateArchivesConfig` )
+  * **rotate_archives**: Configuration for rotating archives (  (Required) Type: `RotateArchivesConfig` )
     * **enabled**: Enable or disable the action of rotating the archives (  Type: `bool` Default: `False` )
 
-    * **directory_path** (  Type: `<class 'pathlib.Path'>` )
+    * **directory_path**: Path to the directory to rename with the current date (  (Required) Type: `<class 'pathlib.Path'>` )
 
     * **keep_count**: Number of directories to keep in the parent folder after directory_path has been renamed (  Type: `int` Default: `10` )
 
@@ -31,7 +31,7 @@ Both actions have the same behavior:
 
 
 
-  * **upload_archives**: Configuration for uploading archives (  Type: `UploadArchivesConfig` )
+  * **upload_archives**: Configuration for uploading archives (  (Required) Type: `UploadArchivesConfig` )
     * **enabled**: Enable or disable the action of uploading the archives (  Type: `bool` Default: `False` )
 
     * **local_folder**: Path to the local folder containing the archives to upload. Optional. If you're using rotate_archives, jenkins will set the local folder path with the contents of output_file. (  Type: `Optional[pathlib.Path]` Default: `None` )
