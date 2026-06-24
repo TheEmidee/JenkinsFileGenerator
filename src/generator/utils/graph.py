@@ -2,6 +2,7 @@
 
 from collections import defaultdict, deque
 
+
 def build_dependency_graph(groups: dict[str, list[str]], dependencies: dict[str, list[str]]) -> list[list[str]]:
     """
     Topologically sort groups based on inter-group job dependencies,
