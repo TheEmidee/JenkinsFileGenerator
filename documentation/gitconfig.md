@@ -20,4 +20,6 @@ This module defines the Git-related features and configurations for Jenkins pipe
 
 
 
+  * **retry_count**: Set to a value greater than 1 to try to checkout multiple times. This can help avoid the job to fail in some circumstances (for example with a github app) (  Type: `Optional[int]` Default: `1` )
+
 [Back to main page](index.md)
