@@ -102,6 +102,13 @@ class GitConfig(FeatureConfig):
         default=None,
         description="The checkout configuration. If use_simple_checkout is true, this will be ignored.",
     )
+    retry_count: Optional[int] = Field(
+        default=1,
+        description=(
+            "Set to a value greater than 1 to try to checkout multiple times. "
+            "This can help avoid the job to fail in some circumstances (for example with a github app)"
+        ),
+    )
 
 
 class GitFeature(BaseFeature):
