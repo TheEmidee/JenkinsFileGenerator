@@ -75,7 +75,7 @@ jenkinsfilegenerator config.yaml -o Jenkinsfile --blackboarddata "build_type=Dev
 jenkinsfilegenerator --batch batch.yaml --lint
 
 # Generate documentation
-jenkinsfilegenerator config.yaml --generate_documentation
+jenkinsfilegenerator --generate_documentation
 ```
 
 ## Blackboard data
