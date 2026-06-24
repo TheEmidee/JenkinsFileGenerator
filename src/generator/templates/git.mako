@@ -2,11 +2,14 @@
 
 <%def name="additional_functions()">
 def projectCheckout() {
+% if feature_config.retry_count > 1:
+    retry(count: ${feature_config.retry_count}) {
+% endif
+
 % if feature_config.use_simple_checkout:
     checkout scm
-    return []
 % else:
-    return checkout([
+    checkout([
         $class: 'GitSCM',
         branches: [ ['name': '${feature_config.checkout.branch_name}' ] ],
         extensions: [
@@ -28,5 +31,10 @@ ${k}: ${groovy.write_groovy_repr(v)}${',' if not loop.last else ''}\
         ]
     ])
 % endif
+
+% if feature_config.retry_count > 1:
+    }
+% endif
+
 }
 </%def>
