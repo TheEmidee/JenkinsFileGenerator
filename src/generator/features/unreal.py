@@ -116,12 +116,26 @@ class UnrealProjectConfig(BaseModel):
         return self
 
 
+class UnrealAutomationConfigConfig(BaseModel):
+    """Configuration for the automation scripts."""
+
+    logs_folder: Optional[str] = Field(
+        default="",
+        description=(
+            "Path to save the logs."
+            "This is defined by setting the environment variable uebp_LogFolder before executing any automation script."
+            "For ex: ${env.WORKSPACE}/Saved/Logs/"
+        ),
+    )
+
+
 class UnrealConfig(FeatureConfig):
     """Configuration model for the unreal feature."""
 
     project: UnrealProjectConfig = Field(description="The Unreal project configuration.")
     buildgraph: UnrealBuildGraphConfig = Field(description="The buildgraph configuration.")
     cleanup_after_build: Optional[UnrealCleanupConfig] = Field(default=None, description="Options to run post-buildgraph cleanup tasks.")
+    automation: Optional[UnrealAutomationConfigConfig] = Field(default=None, description="Options to configure the automation scripts.")
 
 
 class UnrealFeature(BaseFeature):
