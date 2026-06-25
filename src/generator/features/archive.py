@@ -44,7 +44,9 @@ class RotateArchivesConfig(BaseModel):
         description="Enable or disable the action of rotating the archives",
     )
     source_directory: Path = Field(description="Path to the source directory where to move the files from")
-    destination_directory: Path = Field(description="Path to the destination directory where to move the files to (in a new folder based on the current date")
+    destination_directory: Path = Field(
+        description="Path to the destination directory where to move the files to (in a new folder based on the current date"
+    )
     keep_count: int = Field(
         default=10,
         description="Number of directories to keep in the parent folder after directory_path has been renamed",
