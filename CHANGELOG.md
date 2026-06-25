@@ -8,6 +8,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.10.1] - 2026-06-25
+
+### Changed
+
+- Updated usage of rotate_archives to use source and destination directories instead of renaming the folder in place ([#40](https://github.com/TheEmidee/JenkinsFileGenerator/issues/40))
+
+
 ## [1.10.0] - 2026-06-24
 
 ### Added
