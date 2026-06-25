@@ -29,7 +29,8 @@ def archivePackages() {
             def rotate_archives_output_file_path = "${feature_config.rotate_archives.folder_output_file_name.as_posix()}"
 
             stage ( "Rotate Archives" ) {
-                def properties = """--directory_path="${feature_config.rotate_archives.directory_path.as_posix()}" `
+                def properties = """--source_directory="${feature_config.rotate_archives.source_directory.as_posix()}" `
+--destination_directory="${feature_config.rotate_archives.destination_directory.as_posix()}" `
 --keep_count="${feature_config.rotate_archives.keep_count}" `
 <%text>--folder_output_file_name="${rotate_archives_output_file_path}"</%text>
 """
