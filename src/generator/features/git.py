@@ -1,7 +1,7 @@
 """This module defines the Git-related features and configurations for Jenkins pipelines."""
 
 from abc import ABC
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -101,6 +101,10 @@ class GitConfig(FeatureConfig):
     checkout: Optional[GitCheckoutConfig] = Field(
         default=None,
         description="The checkout configuration. If use_simple_checkout is true, this will be ignored.",
+    )
+    pre_checkout_tasks: Optional[List[str]] = Field(
+        default=[],
+        description="List of tasks to run before running the checkout.",
     )
     retry_count: Optional[int] = Field(
         default=1,
