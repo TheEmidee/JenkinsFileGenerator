@@ -13,8 +13,7 @@ class GitConfig(FeatureConfig):
     checkout_code: str = Field(
         default="checkout scm",
         description=(
-            "This property will be output in the jenkinsfile as is. "
-            "You can generate a valid code by using the pipeline syntax page of Jenkins."
+            "This property will be output in the jenkinsfile as is. You can generate a valid code by using the pipeline syntax page of Jenkins."
         ),
     )
     pre_checkout_tasks: Optional[List[str]] = Field(
