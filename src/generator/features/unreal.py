@@ -243,13 +243,15 @@ class UnrealFeature(BaseFeature):
             agent_type: str
             groups: Dict[str, UnrealBuildgraphJsonOutput_Group]
             parallel_groups: List[List[str]] = Field(default_factory=list, exclude=True)
+            # flat_groups is a dict group_name -> [ task_list ] since it's only what's needed down the line by the template
+            flat_groups: dict[str, list[str]] = Field(default_factory=dict, exclude=True)
 
             class Config:
                 arbitrary_types_allowed = True
 
             @model_validator(mode="after")
             def create_parallel_groups(self) -> "UnrealBuildgraphJsonOutput_BuildAgent":
-                groups: dict[str, list[str]] = {group.name: [node.name for node in group.nodes] for group in self.groups.values()}
+                self.flat_groups = {group.name: [node.name for node in group.nodes] for group in self.groups.values()}
                 dependencies: dict[str, list[str]] = {}
 
                 for group_name, group in self.groups.items():
@@ -257,7 +259,22 @@ class UnrealFeature(BaseFeature):
                         for dependency in node.depends_on:
                             dependencies.setdefault(node.name, []).append(dependency)
 
-                self.parallel_groups = build_dependency_graph(groups, dependencies)
+                # Split RunEarly jobs out into their own single-job "group" so they aren't
+                # blocked by dependencies that only their siblings in the original group need.
+                for group_name, group in self.groups.items():
+                    for node in group.nodes:
+                        if node.run_early:
+                            if node.name in self.flat_groups:
+                                raise ValueError(f"Job name '{node.name}' collides with an existing group name")
+                            self.flat_groups[group_name].remove(node.name)
+                            self.flat_groups[node.name] = [node.name]
+
+                    # Drop group left empty because every node in them was RunEarly,
+                    # otherwise they'd show up as phantom empty batches.
+                    if not self.flat_groups[group_name]:
+                        del self.flat_groups[group_name]
+
+                self.parallel_groups = build_dependency_graph(self.flat_groups, dependencies)
 
                 return self
 
@@ -306,7 +323,7 @@ class UnrealFeature(BaseFeature):
         % for group_name in group:
             [
                 "${group_name}": [
-                    tasks: [ ${", ".join(f'"{node.name}"' for node in build_agent.groups[group_name].nodes)} ],
+                    tasks: [ ${", ".join(f'"{node_name}"' for node_name in build_agent.flat_groups[group_name])} ],
                     platform: "${build_agent_platform}"
                 ],
             ],
