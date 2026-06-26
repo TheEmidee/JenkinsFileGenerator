@@ -1,1 +1,0 @@
-Added pre checkout steps to the git feature

@@ -8,6 +8,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.11.0] - 2026-06-26
+
+### Added
+
+- Added pre checkout steps to the git feature ([#41](https://github.com/TheEmidee/JenkinsFileGenerator/issues/41))
+
+
 ## [1.10.1] - 2026-06-25
 
 ### Changed
