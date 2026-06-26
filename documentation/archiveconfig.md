@@ -4,6 +4,8 @@
 Archive feature for the Jenkins File Generator.
 This feature allows to archive the artifacts or build products created by the jenkins pipeline.
 It also allows to upload the archives to an S3 bucket.
+It requires the python feature to work, and that you have in the requirements of your python folder in the project
+a reference to the package GameDevTools.
 
 Both actions have the same behavior:
 1. The local folder will be copied over to the shared folder / s3 bucket with the current date
@@ -16,7 +18,9 @@ Both actions have the same behavior:
   * **rotate_archives**: Configuration for rotating archives (  (Required) Type: `RotateArchivesConfig` )
     * **enabled**: Enable or disable the action of rotating the archives (  Type: `bool` Default: `False` )
 
-    * **directory_path**: Path to the directory to rename with the current date (  (Required) Type: `<class 'pathlib.Path'>` )
+    * **source_directory**: Path to the source directory where to move the files from (  (Required) Type: `<class 'pathlib.Path'>` )
+
+    * **destination_directory**: Path to the destination directory where to move the files to (in a new folder based on the current date (  (Required) Type: `<class 'pathlib.Path'>` )
 
     * **keep_count**: Number of directories to keep in the parent folder after directory_path has been renamed (  Type: `int` Default: `10` )
 

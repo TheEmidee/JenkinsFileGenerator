@@ -1,0 +1,1 @@
+Updated the git configuration to use a single `checkout_code` property, which is output as is in the jenkinsfile
