@@ -85,12 +85,12 @@ ${feature_config._accumulator['buildgraph_properties']}
 }
 
 def executeAutomationScript(String scriptName, String arguments) {
-    % if feature_config.automation.logs_folder:
+    % if feature_config.automation and feature_config.automation.logs_folder:
     def logFolder = "${feature_config.automation.logs_folder}"
     <%text>withEnv( ["uebp_LogFolder=${logFolder}"] ) {</%text>
     % endif
     executePythonScript(scriptName, arguments)
-    % if feature_config.automation.logs_folder:
+    % if feature_config.automation and feature_config.automation.logs_folder:
     }
     % endif
 }
