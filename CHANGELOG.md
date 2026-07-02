@@ -8,6 +8,18 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.12.0] - 2026-07-02
+
+### Changed
+
+- Updated the git configuration to use a single `checkout_code` property, which is output as is in the jenkinsfile ([#42](https://github.com/TheEmidee/JenkinsFileGenerator/issues/42))
+
+### Fixed
+
+- Don't swallow exceptions which are not related to absence of def blocks in feature template files
+  Fixed condition in the unreal feature which would not render additional functions if there was no automation config in the yaml ([#43](https://github.com/TheEmidee/JenkinsFileGenerator/issues/43))
+
+
 ## [1.11.0] - 2026-06-26
 
 ### Added
