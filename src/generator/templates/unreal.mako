@@ -9,7 +9,7 @@ runBuildGraph("${feature_config.buildgraph.target}")
 </%def>
 
 <%def name="on_finally()">
-% if feature_config.cleanup_after_build.enabled:
+% if feature_config.cleanup_after_build and feature_config.cleanup_after_build.enabled:
 cleanup()
 % endif
 </%def>
@@ -136,7 +136,7 @@ def executeAutomationScript(String scriptName, String arguments) {
     % endif
 }
 
-% if feature_config.cleanup_after_build.enabled:
+% if feature_config.cleanup_after_build and feature_config.cleanup_after_build.enabled:
 def cleanup() {
     <% 
     nodes = full_config.jenkins.default_node_names
