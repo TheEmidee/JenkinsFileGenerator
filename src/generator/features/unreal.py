@@ -81,6 +81,10 @@ class UnrealBuildGraphConfig(BaseModel):
             "(Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine with no GPU to run the BootTest)"
         ),
     )
+    arguments: Optional[List[str]] = Field(
+            default=None,
+            description="Arguments to pass to build graph. These are passed as is.",
+        )
     properties: Optional[Dict[str, str]] = Field(
         default=None,
         description="Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments.",
@@ -217,9 +221,18 @@ class UnrealFeature(BaseFeature):
             # list of all the properties to pass to buildgraph, one per line.
             # The character ` at the end of each line is important for the powerShell call
             buildgraph_properties: str = ""
+
+            if unreal_config.buildgraph.arguments is not None:
+                buildgraph_properties += " `\n".join(unreal_config.buildgraph.arguments)
+                buildgraph_properties += " `\n"
+
+            if not unreal_config.buildgraph.use_parallel_jobs:
+                buildgraph_properties += "--no-single-node `\n"
+
             if unreal_config.buildgraph.properties is not None:
                 lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
                 buildgraph_properties += " `\n".join(lines)
+                buildgraph_properties += " `\n"
 
             context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
 
