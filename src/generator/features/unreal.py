@@ -95,7 +95,7 @@ class UnrealBuildGraphConfig(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_model(self, info: ValidationInfo) -> "UnrealProjectConfig":
+    def validate_model(self, info: ValidationInfo) -> "UnrealBuildGraphConfig":
         """Validation of the buildgraph config model
         and try to resolve paths to the script file if set."""
         if not info.context or not info.context.config_file_path:

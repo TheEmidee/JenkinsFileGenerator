@@ -7,7 +7,7 @@ import os
 import pkgutil
 import sys
 from pathlib import Path
-from typing import Any, List, Optional, Type, Union, get_args, get_origin
+from typing import Any, List, Optional, Type, Union, cast, get_args, get_origin
 
 from pydantic import BaseModel
 
@@ -311,7 +311,7 @@ class DocumentationGenerator:
             List of discovered classes that inherit from the base class
         """
 
-        discovered_classes = []
+        discovered_classes: List[Type[BaseModel]] = []
         package_path = os.path.abspath("src/generator/features")
 
         # Temporarily add the parent directory to sys.path
@@ -339,7 +339,7 @@ class DocumentationGenerator:
                             # Inspect all classes in the module
                             for _, obj in inspect.getmembers(module, inspect.isclass):
                                 if self._is_subclass_of_base(obj, "FeatureConfig"):
-                                    discovered_classes.append(obj)
+                                    discovered_classes.append(cast(Type[BaseModel], obj))
 
                         except ImportError as e:
                             print(f"Warning: Could not import module {full_modname}: {e}")
