@@ -155,7 +155,7 @@ class UnrealFeature(BaseFeature):
 
     def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs = self.get_jenkins_jobs(context)
+            jenkins_jobs = self._get_jenkins_jobs(context)
             context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
@@ -192,7 +192,7 @@ class UnrealFeature(BaseFeature):
 
         return export_path
 
-    def get_jenkins_jobs(self, context: TemplateContext) -> str:
+    def _get_jenkins_jobs(self, context: TemplateContext) -> str:
         """Generate the Jenkins jobs for Unreal."""
 
         export_path = self._generate_buildgraph_export_file(context)
