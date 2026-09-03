@@ -16,7 +16,7 @@ maintainers = [
 authors = [
   { name = "Michael Delva", email = "michael@emidee.net" },
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -40,7 +40,8 @@ dependencies = [
   "PyYAML",
   "typing-inspection",
   "typing_extensions",
-  "types-PyYAML"
+  "types-PyYAML",
+  "uepyscripts"
 ]
 
 urls.Changelog = "https://github.com/TheEmidee/JenkinsfileGenerator/releases"
