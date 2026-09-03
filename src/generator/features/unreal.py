@@ -72,7 +72,7 @@ class UnrealBuildGraphConfig(BaseModel):
             "If set to true, a pre-pass will execute buildgraph to output a json which will be analyzed to sort tasks by dependencies"
             "to execute them in parallel. (For ex compile all targets in parallel, then cook all targets in parallel, etc...)"
             "Set this property to false to disable this prepass and simply execute the target"
-        )
+        ),
     )
     node_name_filters: Optional[Dict[str, str]] = Field(
         default=None,
@@ -82,9 +82,9 @@ class UnrealBuildGraphConfig(BaseModel):
         ),
     )
     arguments: Optional[List[str]] = Field(
-            default=None,
-            description="Arguments to pass to build graph. These are passed as is.",
-        )
+        default=None,
+        description="Arguments to pass to build graph. These are passed as is.",
+    )
     properties: Optional[Dict[str, str]] = Field(
         default=None,
         description="Properties to pass to build graph. These are passed as -set:PropertyName=PropertyValue arguments.",
