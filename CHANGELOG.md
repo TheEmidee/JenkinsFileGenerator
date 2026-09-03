@@ -8,6 +8,22 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.13.0] - 2026-09-03
+
+### Added
+
+- Added unreal.buildgraph.arguments
+  Added unreal.buildgraph.use_parallel_jobs ([#44](https://github.com/TheEmidee/JenkinsFileGenerator/issues/44))
+
+### Changed
+
+- Added dependency to UEPyScripts to directly use uepyscripts.run instead of using a subprocess ([#44](https://github.com/TheEmidee/JenkinsFileGenerator/issues/44))
+
+### Fixed
+
+- Fixed issues when feature_config.cleanup_after_build is not defined in the config file ([#44](https://github.com/TheEmidee/JenkinsFileGenerator/issues/44))
+
+
 ## [1.12.0] - 2026-07-02
 
 ### Changed
