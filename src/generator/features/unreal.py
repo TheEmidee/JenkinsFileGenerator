@@ -3,6 +3,15 @@ It requires that you use
 * UEProjectBootStrap : https://github.com/TheEmidee/UEProjectBootstrap
 * PyScripts https://github.com/TheEmidee/UEPyScripts
 
+If you set the property `use_parallel_jobs` from `buildgraph` to false, then the output is simple:
+It will execute `ue-ci-run-buildgraph` (from UEPyScripts) to run the target defined in the config, passing it the various arguments
+and properties.
+
+`ue-ci-run-buildgraph` internally calls `ue-run-buildgraph`, passing down a few extra arguments, such as `-Nop4` and `BuildMachine`.
+
+If you choose to set `use_parallel_jobs` to true, then this package will execute a pre-pass to generate a list of tasks from the buildgraph file
+that can be executed in parallel.
+
 In a nutshell, this is how this feature works:
 1. Before generating any text to output in the Jenkinsfile, this feature will run the
 module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties,
@@ -57,6 +66,14 @@ class UnrealBuildGraphConfig(BaseModel):
         ),
     )
     target: str = Field(description="The target to build with Build Graph.")
+    use_parallel_jobs: bool = Field(
+        default=True,
+        description=(
+            "If set to true, a pre-pass will execute buildgraph to output a json which will be analyzed to sort tasks by dependencies"
+            "to execute them in parallel. (For ex compile all targets in parallel, then cook all targets in parallel, etc...)"
+            "Set this property to false to disable this prepass and simply execute the target"
+        )
+    )
     node_name_filters: Optional[Dict[str, str]] = Field(
         default=None,
         description=(
@@ -191,10 +208,11 @@ class UnrealFeature(BaseFeature):
 
     def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs = self._get_jenkins_jobs(context)
-            context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
-
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
+
+            if unreal_config.buildgraph.use_parallel_jobs:
+                jenkins_jobs = self._get_jenkins_jobs(context)
+                context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
             # list of all the properties to pass to buildgraph, one per line.
             # The character ` at the end of each line is important for the powerShell call

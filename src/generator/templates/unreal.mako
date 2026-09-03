@@ -1,7 +1,11 @@
 <%namespace name="utils" file="utils.mako"/>
 
 <%def name="build_steps()">
+% if feature_config.buildgraph.use_parallel_jobs:
 ${feature_config._accumulator['jenkins_jobs_output']}
+% else:
+runBuildGraph("${feature_config.buildgraph.target}")
+% endif
 </%def>
 
 <%def name="on_finally()">
@@ -11,6 +15,7 @@ cleanup()
 </%def>
 
 <%def name="additional_functions()">
+% if feature_config.buildgraph.use_parallel_jobs:
 def executeJobsInParallel(List jobGroup) {
     def parallelJobs = [:]
     
@@ -83,6 +88,42 @@ ${feature_config._accumulator['buildgraph_properties']}
         }
     }
 }
+
+% else:
+
+def runBuildGraph( taskName ) {
+    node( "${full_config.jenkins.default_node_names}" ) {
+        ${utils.initialize_env()}
+        
+        skipDefaultCheckout()
+        
+        ${utils.get_workspace()}
+        {
+            projectCheckout()
+
+            stage( taskName ) {
+                preBuildGraphTasks()
+
+                % for pre_task in feature_config.buildgraph.pre_tasks:
+                ${pre_task}
+                % endfor
+
+                def build_tag = getSanitizedBuildTag()
+
+                // It's important to NOT have an end of line before the first argument otherwise Jenkins will fail to execute the posh script
+                def properties = """<%text>--target="${taskName}" `
+--build_tag="${build_tag}"</%text> `
+${feature_config._accumulator['buildgraph_properties']}
+"""
+
+                executeAutomationScript( "ue-ci-run-buildgraph", properties )
+
+                postBuildGraphTasks( taskName )
+            }
+        }
+    }
+}
+% endif
 
 def executeAutomationScript(String scriptName, String arguments) {
     % if feature_config.automation and feature_config.automation.logs_folder:
