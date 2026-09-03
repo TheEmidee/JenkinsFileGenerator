@@ -3,6 +3,15 @@ It requires that you use
 * UEProjectBootStrap : https://github.com/TheEmidee/UEProjectBootstrap
 * PyScripts https://github.com/TheEmidee/UEPyScripts
 
+If you set the property `use_parallel_jobs` from `buildgraph` to false, then the output is simple:
+It will execute `ue-ci-run-buildgraph` (from UEPyScripts) to run the target defined in the config, passing it the various arguments
+and properties.
+
+`ue-ci-run-buildgraph` internally calls `ue-run-buildgraph`, passing down a few extra arguments, such as `-Nop4` and `BuildMachine`.
+
+If you choose to set `use_parallel_jobs` to true, then this package will execute a pre-pass to generate a list of tasks from the buildgraph file
+that can be executed in parallel.
+
 In a nutshell, this is how this feature works:
 1. Before generating any text to output in the Jenkinsfile, this feature will run the
 module `uepyscripts.run.buildgraph` by passing the buildgraph.target and buildgraph.properties,
@@ -32,13 +41,13 @@ Note that the script Setup.ps1 created by UEProjectBoostrap will be called when 
 to ensure that all the requirements (such as Python and the required moduldes) are installed on the machine.
 """
 
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
 
 from mako.template import Template  # type: ignore[import-untyped]
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from uepyscripts.run import buildgraph
 
 from generator import logger
 from generator.core.base_feature import BaseFeature, FeatureConfig
@@ -49,13 +58,32 @@ from generator.utils.graph import build_dependency_graph
 class UnrealBuildGraphConfig(BaseModel):
     """Configuration for Unreal Build Graph tasks."""
 
+    script: Optional[Path] = Field(
+        default=None,
+        description=(
+            "Path to the XML file. If not set, will use the info from Config/PyScripts/config.ini of the game project."
+            "This can be an absolute path, or relative to the yaml config file used to generate the jenkinsfile"
+        ),
+    )
     target: str = Field(description="The target to build with Build Graph.")
+    use_parallel_jobs: bool = Field(
+        default=True,
+        description=(
+            "If set to true, a pre-pass will execute buildgraph to output a json which will be analyzed to sort tasks by dependencies"
+            "to execute them in parallel. (For ex compile all targets in parallel, then cook all targets in parallel, etc...)"
+            "Set this property to false to disable this prepass and simply execute the target"
+        ),
+    )
     node_name_filters: Optional[Dict[str, str]] = Field(
         default=None,
         description=(
             "Filters to apply to the node names. Keys are the buildgraph task names and values are the jenkins node filter."
             "(Ex: `'MyGame Editor Win64 Test=BootTest': '!NoGPU'` will not select machine with no GPU to run the BootTest)"
         ),
+    )
+    arguments: Optional[List[str]] = Field(
+        default=None,
+        description="Arguments to pass to build graph. These are passed as is.",
     )
     properties: Optional[Dict[str, str]] = Field(
         default=None,
@@ -65,6 +93,30 @@ class UnrealBuildGraphConfig(BaseModel):
         default=[],
         description="List of tasks to run before the buildgraph tasks.",
     )
+
+    @model_validator(mode="after")
+    def validate_model(self, info: ValidationInfo) -> "UnrealBuildGraphConfig":
+        """Validation of the buildgraph config model
+        and try to resolve paths to the script file if set."""
+        if not info.context or not info.context.config_file_path:
+            raise ValueError("A context with a config_file_path is required")
+
+        if self.script:
+            if not self.script.is_absolute():
+                # Resolve relative to config file directory
+                config_dir = Path(info.context.config_file_path).parent
+                self.script = (config_dir / self.script).resolve()
+                logger.debug(
+                    "Resolved script relative to config file: %s",
+                    self.script,
+                )
+
+            if not self.script.is_file():
+                raise ValueError("script does not point to a valid file")
+
+            logger.info("Resolved script: %s", self.script)
+
+        return self
 
 
 class UnrealCleanupConfig(BaseModel):
@@ -83,7 +135,12 @@ class UnrealCleanupConfig(BaseModel):
 class UnrealProjectConfig(BaseModel):
     """Configuration model for the project section of Unreal."""
 
-    uproject_path: Path = Field(description="The path to the .uproject file of the Unreal project.")
+    uproject_path: Path = Field(
+        description=(
+            "The path to the .uproject file of the Unreal project."
+            "This can be an absolute path to a uproject file, or relative to the yaml config file used to generate the jenkinsfile"
+        )
+    )
 
     def get_uproject_folder_path(self) -> Path:
         """Get the absolute path to the uproject folder."""
@@ -155,17 +212,27 @@ class UnrealFeature(BaseFeature):
 
     def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
         if block_type == "build_steps":
-            jenkins_jobs = self.get_jenkins_jobs(context)
-            context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
-
             unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
+
+            if unreal_config.buildgraph.use_parallel_jobs:
+                jenkins_jobs = self._get_jenkins_jobs(context)
+                context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
 
             # list of all the properties to pass to buildgraph, one per line.
             # The character ` at the end of each line is important for the powerShell call
             buildgraph_properties: str = ""
+
+            if unreal_config.buildgraph.arguments is not None:
+                buildgraph_properties += " `\n".join(unreal_config.buildgraph.arguments)
+                buildgraph_properties += " `\n"
+
+            if not unreal_config.buildgraph.use_parallel_jobs:
+                buildgraph_properties += "--no-single-node `\n"
+
             if unreal_config.buildgraph.properties is not None:
                 lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
                 buildgraph_properties += " `\n".join(lines)
+                buildgraph_properties += " `\n"
 
             context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
 
@@ -176,23 +243,25 @@ class UnrealFeature(BaseFeature):
         temp_dir: Path = Path(tempfile.gettempdir())
         export_path = temp_dir.joinpath("buildgraph.json")
 
-        cwd = str(config.project.get_uproject_folder_path() / f"{context.full_config.features['python']['venv_folder']}/Scripts/")
+        script = config.buildgraph.script if config.buildgraph.script else ""
 
-        args: List[str] = [f"{cwd}/ue-run-buildgraph.exe", f"--target={config.buildgraph.target}", f"-Export={export_path}", "uebp_UATMutexNoWait=1"]
+        args: List[str] = [
+            f"--uproject={config.project.uproject_path}",
+            f"--script={script}",
+            f"--target={config.buildgraph.target}",
+            f"-Export={export_path}",
+            "uebp_UATMutexNoWait=1",
+        ]
 
         if config.buildgraph.properties:
             args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
 
-        process = subprocess.Popen(args, stdout=subprocess.PIPE)
-
-        result = process.wait()
-
-        if result != 0:
+        if (result := buildgraph.main(args)) != 0:
             raise RuntimeError(f"Buildgraph export command failed with exit code {result}")
 
         return export_path
 
-    def get_jenkins_jobs(self, context: TemplateContext) -> str:
+    def _get_jenkins_jobs(self, context: TemplateContext) -> str:
         """Generate the Jenkins jobs for Unreal."""
 
         export_path = self._generate_buildgraph_export_file(context)

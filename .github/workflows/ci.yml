@@ -7,26 +7,30 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ['3.11']
+        python-version: ['3.12']
     
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
+    - uses: actions/checkout@v6
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v10.0.1
       with:
-        python-version: ${{ matrix.python-version }}
-        cache: 'pip'
-    
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Set up Python
+      run: uv python install ${{ matrix.python-version }}
+
     - name: Install dependencies
-      run: |
-        pip install -e ".[lint]"
-    
+      run: uv sync --extra lint
+
     - name: Lint with ruff
       run: |
-        ruff check .
-        ruff format --check .
-    
+        uv run ruff check .
+        uv run ruff format --check .
+
     - name: Type check with mypy
-      run: mypy .
+      run: uv run mypy .
