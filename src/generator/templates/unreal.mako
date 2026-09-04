@@ -64,6 +64,10 @@ def runBuildGraph( groupName, taskNames, platform ) {
         {
             projectCheckout()
 
+            % if global_values['customization'].get('unreal_postProjectCheckout'):
+            <%include file="${global_values['customization']['unreal_postProjectCheckout']}"/>
+            % endif
+
             taskNames.each { String taskName ->
                 stage( taskName ) {
                     preBuildGraphTasks()
@@ -100,6 +104,10 @@ def runBuildGraph( taskName ) {
         ${utils.get_workspace()}
         {
             projectCheckout()
+
+            % if global_values['customization'].get('unreal_postProjectCheckout'):
+            <%include file="${global_values['customization']['unreal_postProjectCheckout']}"/>
+            % endif
 
             stage( taskName ) {
                 preBuildGraphTasks()
@@ -219,4 +227,9 @@ def runSetupScript() {
 def getSanitizedBuildTag() {
     return BUILD_TAG.replace(" ", "_")
 }
+
+% if global_values['customization'].get('unreal_additionalFunctions'):
+<%include file="${global_values['customization']['unreal_additionalFunctions']}"/>
+% endif
+
 </%def>

@@ -563,7 +563,7 @@ requires-dist = [
     { name = "types-pyyaml" },
     { name = "typing-extensions" },
     { name = "typing-inspection" },
-    { name = "uepyscripts", editable = "../uepyscripts" },
+    { name = "uepyscripts" },
     { name = "wheel", marker = "extra == 'dev'" },
     { name = "wheel", marker = "extra == 'dist'" },
 ]
@@ -1426,7 +1426,8 @@ wheels = [
 
 [[package]]
 name = "uepyscripts"
-source = { editable = "../uepyscripts" }
+version = "1.4.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
     { name = "blake3" },
@@ -1451,47 +1452,10 @@ dependencies = [
     { name = "typing-inspection" },
     { name = "urllib3" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "annotated-types" },
-    { name = "blake3" },
-    { name = "build", marker = "extra == 'dev'" },
-    { name = "build", marker = "extra == 'dist'" },
-    { name = "colorama" },
-    { name = "gamedevtools" },
-    { name = "hatchling", marker = "extra == 'dev'" },
-    { name = "hatchling", marker = "extra == 'dist'" },
-    { name = "invoke" },
-    { name = "jmespath" },
-    { name = "markupsafe" },
-    { name = "mypy", marker = "extra == 'dev'" },
-    { name = "mypy", marker = "extra == 'lint'" },
-    { name = "packaging" },
-    { name = "psutil" },
-    { name = "pydantic" },
-    { name = "pydantic-core" },
-    { name = "python-dateutil" },
-    { name = "pyyaml" },
-    { name = "ruff", marker = "extra == 'dev'" },
-    { name = "ruff", marker = "extra == 'lint'" },
-    { name = "s3transfer" },
-    { name = "six" },
-    { name = "towncrier", marker = "extra == 'dev'" },
-    { name = "towncrier", marker = "extra == 'dist'" },
-    { name = "twine", marker = "extra == 'dev'" },
-    { name = "twine", marker = "extra == 'dist'" },
-    { name = "types-colorama" },
-    { name = "types-invoke" },
-    { name = "types-psutil" },
-    { name = "types-requests" },
-    { name = "typing-extensions" },
-    { name = "typing-inspection" },
-    { name = "urllib3" },
-    { name = "wheel", marker = "extra == 'dev'" },
-    { name = "wheel", marker = "extra == 'dist'" },
+sdist = { url = "https://files.pythonhosted.org/packages/3c/65/ee28ef46e461f791a9f9a1e63ec4d26bb93d5899178a7b5d2ee1222ee319/uepyscripts-1.4.2.tar.gz", hash = "sha256:583f59acdd0eaf6db26e3cdf3583829386ad22880cc561b3b548c9c951e88bf9", size = 33130, upload-time = "2026-09-04T08:39:25.276Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/22/c6/95b078d8c0aebdc422ab77d1cf02a2408b6f6af08826c915e14f00f08b26/uepyscripts-1.4.2-py3-none-any.whl", hash = "sha256:9c6362202505df42fd727ce518a402dedc5f27e5811ecf0ccc92230146658b18", size = 45069, upload-time = "2026-09-04T08:39:23.715Z" },
 ]
-provides-extras = ["dev", "dist", "lint"]
 
 [[package]]
 name = "urllib3"
