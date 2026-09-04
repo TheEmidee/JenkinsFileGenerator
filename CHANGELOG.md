@@ -8,6 +8,13 @@ This project uses [*towncrier*](https://towncrier.readthedocs.io/) and the chang
 
 <!-- towncrier release notes start -->
 
+## [1.13.1] - 2026-09-04
+
+### Added
+
+- Added new customization entries for unreal : unreal_postProjectCheckout and unreal_additionalFunctions ([#45](https://github.com/TheEmidee/JenkinsFileGenerator/issues/45))
+
+
 ## [1.13.0] - 2026-09-03
 
 ### Added
