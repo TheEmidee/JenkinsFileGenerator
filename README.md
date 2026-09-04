@@ -157,6 +157,12 @@ To output your own code, you need to follow these simple steps:
 2. Set the property `customization_folder` of your pipeline config to the name of your folder (If you place that folder in another location, you can use a relative path here. You can also use an absolute path if you want)
 3. In that folder, create a file for each customization you want. For example, the unreal feature supports `unreal_postBuildGraphTasks`. So you would create a file named `unreal_postBuildGraphTasks.mako` in that folder. Note that you can use the context data that the mako template engine uses, so you have the exact same data that is used when the feature is processed.
 
+```
+% if global_values['customization'].get('unreal_postBuildGraphTasks'):
+<%include file="${global_values['customization']['unreal_postBuildGraphTasks']}"/>
+% endif
+```
+
 That's it !
 
 You can check [ue_full_example.yaml](examples/ue_full_example.yaml) for a working configuration.
