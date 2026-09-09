@@ -57,6 +57,33 @@ jobs:
             name: python-package-distributions
             path: dist/
 
+      - name: Extract changelog section for this version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION_NUMBER="${TAG_NAME#v}"
+
+          awk -v ver="$VERSION_NUMBER" '
+            /^## / {
+              if (found) exit
+              if ($0 ~ "^## \\[?" ver "\\]?") { found=1; next }
+              next
+            }
+            found { print }
+          ' CHANGELOG.md | sed '/./,$!d' > release_notes.md
+
+          if [ ! -s release_notes.md ]; then
+            echo "Release $TAG_NAME" > release_notes.md
+          fi
+
+          echo "----- Extracted release notes -----"
+          cat release_notes.md
+
+      - name: Store release notes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+
   publish-to-pypi:
     name: >-
       Publish Python 🐍 distribution 📦 to PyPI
@@ -76,6 +103,11 @@ jobs:
         name: python-package-distributions
         path: dist/
 
+    - name: Download release notes
+      uses: actions/download-artifact@v6
+      with:
+        name: release-notes
+
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
 
@@ -87,3 +119,4 @@ jobs:
         draft: false
         prerelease: false
         files: dist/*
+        body_path: release_notes.md
