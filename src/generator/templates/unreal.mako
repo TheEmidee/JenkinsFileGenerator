@@ -1,8 +1,39 @@
 <%namespace name="utils" file="utils.mako"/>
 
+<%!
+def buildgraph_properties(buildgraph):
+    """Arguments and -set: properties passed to ue-ci-run-buildgraph, one per line.
+    The ` at the end of each line is important for the PowerShell call."""
+    text = ""
+    if buildgraph.arguments is not None:
+        text += " `\n".join(buildgraph.arguments) + " `\n"
+    if not buildgraph.use_parallel_jobs:
+        text += "--no-single-node `\n"
+    if buildgraph.properties is not None:
+        text += " `\n".join(f"-set:{key}={value}" for key, value in buildgraph.properties.items()) + " `\n"
+    return text
+%>
+
 <%def name="build_steps()">
 % if feature_config.buildgraph.use_parallel_jobs:
-${feature_config._accumulator['jenkins_jobs_output']}
+    def buildgraph_job_groups = [
+% for batch in buildgraph_plan.batches:
+        [
+    % for job_group in batch:
+            [
+                "${job_group.name}": [
+                    tasks: [ ${", ".join(f'"{node_name}"' for node_name in job_group.node_names)} ],
+                    platform: "${job_group.agent_type}"
+                ],
+            ],
+    % endfor
+        ],
+% endfor
+    ]
+
+    buildgraph_job_groups.each { group ->
+        executeJobsInParallel(group)
+    }
 % else:
 runBuildGraph("${feature_config.buildgraph.target}")
 % endif
@@ -81,7 +112,7 @@ def runBuildGraph( groupName, taskNames, platform ) {
                     // It's important to NOT have an end of line before the first argument otherwise Jenkins will fail to execute the posh script
                     def properties = """<%text>--target="${taskName}" `
 --build_tag="${build_tag}"</%text> `
-${feature_config._accumulator['buildgraph_properties']}
+${buildgraph_properties(feature_config.buildgraph)}
 """
 
                     executeAutomationScript( "ue-ci-run-buildgraph", properties )
@@ -121,7 +152,7 @@ def runBuildGraph( taskName ) {
                 // It's important to NOT have an end of line before the first argument otherwise Jenkins will fail to execute the posh script
                 def properties = """<%text>--target="${taskName}" `
 --build_tag="${build_tag}"</%text> `
-${feature_config._accumulator['buildgraph_properties']}
+${buildgraph_properties(feature_config.buildgraph)}
 """
 
                 executeAutomationScript( "ue-ci-run-buildgraph", properties )

@@ -21,3 +21,11 @@ _Avoid_: plugin, module (reserved for code design).
 **Loaded pipeline**: the result of successful Pipeline loading: the validated Pipeline config, the Feature config of every declared Feature, and where it came from (source file, Blackboard data).
 
 **Validation message**: one located finding (error, warning, or info) about a Pipeline config or a template: message, file, line, the config key path it concerns, and an optional suggestion.
+
+**BuildGraph export**: the JSON that Unreal's BuildGraph writes (`-Export=`) for a target: its groups, their agent types, and each node's dependencies. Produced by an exporter; uepyscripts in production, fixtures in tests.
+
+**Job group**: one BuildGraph group as Jenkins runs it: group name, the names of its nodes (run in order on one agent), and the agent type (Jenkins node label) it runs on.
+
+**Batch**: a set of Job groups with no dependencies between them, run in parallel by Jenkins.
+
+**BuildGraph plan**: the ordered list of Batches for a BuildGraph target; each Batch starts once the previous one has finished.

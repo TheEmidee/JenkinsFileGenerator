@@ -1,0 +1,42 @@
+{
+  "Groups": [
+    {
+      "Name": "Editor Win64",
+      "Agent Types": ["Win64"],
+      "Nodes": [
+        {"Name": "Compile Editor Win64", "DependsOn": "", "RunEarly": false, "Notify": {"Default": "", "Submitters": "", "Warnings": true}}
+      ]
+    },
+    {
+      "Name": "Game Win64",
+      "Agent Types": ["Win64"],
+      "Nodes": [
+        {"Name": "Compile Game Win64", "DependsOn": "", "RunEarly": false, "Notify": {"Default": "", "Submitters": "", "Warnings": true}}
+      ]
+    },
+    {
+      "Name": "Cook Win64",
+      "Agent Types": ["Win64"],
+      "Nodes": [
+        {"Name": "Cook Game Win64", "DependsOn": "Compile Editor Win64;Compile Game Win64", "RunEarly": false, "Notify": {"Default": "", "Submitters": "", "Warnings": true}},
+        {"Name": "Stage Win64", "DependsOn": "Cook Game Win64", "RunEarly": false, "Notify": {"Default": "", "Submitters": "", "Warnings": true}}
+      ]
+    },
+    {
+      "Name": "Tests Win64",
+      "Agent Types": ["Win64"],
+      "Nodes": [
+        {"Name": "BootTest Win64", "DependsOn": "Stage Win64", "RunEarly": false, "Notify": {"Default": "", "Submitters": "", "Warnings": true}}
+      ]
+    },
+    {
+      "Name": "Game Linux",
+      "Agent Types": ["Linux"],
+      "Nodes": [
+        {"Name": "Compile Game Linux", "DependsOn": "", "RunEarly": false, "Notify": {"Default": "", "Submitters": "", "Warnings": true}}
+      ]
+    }
+  ],
+  "Badges": [],
+  "Reports": []
+}
