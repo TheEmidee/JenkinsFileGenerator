@@ -1,0 +1,3 @@
+# Store text files with LF line endings in the repository and check them out with LF,
+# so editors or tools writing CRLF on Windows cannot change them on commit.
+* text=auto eol=lf
