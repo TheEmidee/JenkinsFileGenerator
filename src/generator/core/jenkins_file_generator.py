@@ -1,10 +1,8 @@
 """The main entry point for generating a Jenkinsfile from a configuration file."""
 
-import re
 from pathlib import Path
 from typing import Any, Dict, List
 
-import yaml
 from mako.lookup import TemplateLookup  # type: ignore[import-untyped]
 
 from generator import logger
@@ -14,6 +12,7 @@ from generator.core.dependency_resolver import DependencyResolver
 from generator.core.feature_registry import FeatureRegistry
 from generator.core.generated_blocks import GeneratedBlocks
 from generator.core.pipeline_config import PipelineConfig
+from generator.core.pipeline_loading import LoadedPipeline
 from generator.core.template_context import TemplateContext
 from generator.core.validation_context import ConfigValidationContext
 
@@ -34,10 +33,10 @@ class JenkinsfileGenerator:
 
         self.template_lookup = TemplateLookup(directories=directories)
 
-    def generate_jenkinsfile(self, config_path: Path, output_path: Path, blackboard_data: str = "") -> None:
-        """Main method to generate a Jenkinsfile from configuration."""
+    def generate_jenkinsfile(self, pipeline: LoadedPipeline, output_path: Path) -> None:
+        """Generate a Jenkinsfile from a Loaded pipeline (see generator.core.pipeline_loading)."""
 
-        config = self.__load_config(config_path, blackboard_data)
+        config = pipeline.config
         self.__create_template_lookup(config)
 
         selected_features = self.__select_features(config)
@@ -57,17 +56,19 @@ class JenkinsfileGenerator:
         global_values = {
             "generator_version": "1.0.0",
             "output_feature_sections": False,
-            "source_yaml_file": config_path,
-            "blackboard_data": blackboard_data,
+            "source_yaml_file": pipeline.source_path,
+            "blackboard_data": pipeline.blackboard_data,
             "customization": {file.stem: file.name for file in config.customization_folder.rglob("*.mako")}
             if config.customization_folder is not None
             else {},
         }
 
-        validation_context = ConfigValidationContext(config_path)
+        validation_context = ConfigValidationContext(pipeline.source_path)
         for feature in ordered_features:
             try:
-                feature_config = feature.get_feature_config(config, validation_context)
+                # Features added only as dependencies are not declared in the Pipeline config,
+                # so they have no Feature config from loading and get their defaults here.
+                feature_config = pipeline.feature_configs.get(feature.feature_name) or feature.get_feature_config(config, validation_context)
                 context = TemplateContext(
                     full_config=config,
                     feature_config=feature_config,
@@ -82,33 +83,6 @@ class JenkinsfileGenerator:
                 raise RuntimeError(f"Failed to process feature '{feature.feature_name}': {e}") from e
 
         self.__render_final_jenkinsfile(all_blocks, config, global_values, output_path)
-
-    def __load_config(self, config_path: Path, blackboard_data: str = "") -> PipelineConfig:
-        """Load and parse YAML configuration file."""
-        try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                yaml_str = f.read()
-
-            if blackboard_data != "":
-                blackboard_data_dict: dict[str, str] = dict(item.split("=") for item in blackboard_data.split(","))
-
-                for key, value in blackboard_data_dict.items():
-                    logger.info(
-                        "Replace blackboard data key %s by %s",
-                        key,
-                        value,
-                    )
-                    placeholder = f"^BLACKBOARD_DATA.{key}^"
-                    yaml_str = yaml_str.replace(placeholder, value)
-
-                remaining_tokens = re.findall(r"\^BLACKBOARD_DATA\.[^\^]+\^", yaml_str)
-                if remaining_tokens:
-                    raise ValueError(f"Unresolved BLACKBOARD_DATA tokens in config: {remaining_tokens}")
-
-            yaml_contents = yaml.safe_load(yaml_str)
-            return PipelineConfig.model_validate(yaml_contents, context=ConfigValidationContext(config_path))
-        except Exception as e:
-            raise ValueError(f"Failed to load config file '{config_path}': {e}") from e
 
     def __select_features(self, config: PipelineConfig) -> List[BaseFeature]:
         """Select and instantiate features based on configuration."""

@@ -1,0 +1,7 @@
+Fixed validation messages never showing a line number; every configuration error now points at its line, or at the nearest parent key.
+Fixed configurations using Blackboard data failing validation; validation now applies Blackboard data exactly like generation, and reports each unresolved token with its line.
+Fixed feature configuration errors being reported without the failing field.
+Fixed `--batch --validate` only validating the first item.
+Fixed `--validate` requiring `-o`, and `--list_features` requiring a config file.
+Fixed `--validate` not validating the templates, as documented.
+Fixed `python -m generator` always exiting with code 0.

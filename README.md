@@ -48,16 +48,17 @@ jenkinsfilegenerator <config_file> [options]
 | Argument                   | Type | Required | Description                                        |
 | -------------------------- | ---- | -------- | ---------------------------------------------------|
 | `config`                   | Path | Yes      | Path to the YAML configuration file                |
-| `-o, --output`             | Path | Yes      | Output path for the generated Jenkinsfile          |
+| `-o, --output`             | Path | Yes*     | Output path for the generated Jenkinsfile          |
 | `--batch`                  | Path | No       | Path to a YAML batch file                          |
 | `-bbd, --blackboarddata`   | Str  | No       | A comma separated list of key=value pairs          |
 | `--lint`                   | Flag | No       | Run npm-groovy-lint on the generated file          |
 | `--generate-documentation` | Flag | No       | Generates the configuration documentation          |
 | `--validate`               | Flag | No       | Validates the config file and the mako templates   |
 | `--list_features`          | Flag | No       | Output the registered features in the console      |
-| `--no-validation`          | Flag | No       | Skip configuration validation (not recommended)    |
 | `--verbose`                | Flag | No       | Show detailed messages                             |
 | `--quiet`                  | Flag | No       | Suppress non-error output                          |
+
+\* Not required with `--validate`. Configuration and template validation always run before generation.
 
 ### Examples
 
