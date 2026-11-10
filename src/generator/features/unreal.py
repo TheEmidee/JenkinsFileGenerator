@@ -41,18 +41,15 @@ Note that the script Setup.ps1 created by UEProjectBoostrap will be called when 
 to ensure that all the requirements (such as Python and the required moduldes) are installed on the machine.
 """
 
-import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, cast
 
-from mako.template import Template  # type: ignore[import-untyped]
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
-from uepyscripts.run import buildgraph
+from pydantic import BaseModel, Field, ValidationInfo, model_validator
 
 from generator import logger
 from generator.core.base_feature import BaseFeature, FeatureConfig
 from generator.core.template_context import TemplateContext
-from generator.utils.graph import build_dependency_graph
+from generator.features.unreal_buildgraph import BuildGraphExporter, UEPyScriptsExporter, plan_buildgraph
 
 
 class UnrealBuildGraphConfig(BaseModel):
@@ -200,6 +197,9 @@ class UnrealFeature(BaseFeature):
 
     feature_name = "unreal"
 
+    def __init__(self, exporter: Optional[BuildGraphExporter] = None) -> None:
+        self._exporter: BuildGraphExporter = exporter if exporter is not None else UEPyScriptsExporter()
+
     def should_include(self, config: Dict[str, Any]) -> bool:
         return "unreal" in config
 
@@ -210,185 +210,8 @@ class UnrealFeature(BaseFeature):
     def dependencies(self) -> List[str]:
         return ["python", "utils"]
 
-    def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
-        if block_type == "build_steps":
-            unreal_config: UnrealConfig = cast(UnrealConfig, context.feature_config)
-
-            if unreal_config.buildgraph.use_parallel_jobs:
-                jenkins_jobs = self._get_jenkins_jobs(context)
-                context.feature_config._accumulator["jenkins_jobs_output"] = jenkins_jobs
-
-            # list of all the properties to pass to buildgraph, one per line.
-            # The character ` at the end of each line is important for the powerShell call
-            buildgraph_properties: str = ""
-
-            if unreal_config.buildgraph.arguments is not None:
-                buildgraph_properties += " `\n".join(unreal_config.buildgraph.arguments)
-                buildgraph_properties += " `\n"
-
-            if not unreal_config.buildgraph.use_parallel_jobs:
-                buildgraph_properties += "--no-single-node `\n"
-
-            if unreal_config.buildgraph.properties is not None:
-                lines = [f"-set:{key}={value}" for key, value in unreal_config.buildgraph.properties.items()]
-                buildgraph_properties += " `\n".join(lines)
-                buildgraph_properties += " `\n"
-
-            context.feature_config._accumulator["buildgraph_properties"] = buildgraph_properties
-
-        return super().render_block(block_type, context, template)
-
-    def _generate_buildgraph_export_file(self, context: TemplateContext) -> Path:
-        config: UnrealConfig = cast(UnrealConfig, context.feature_config)
-        temp_dir: Path = Path(tempfile.gettempdir())
-        export_path = temp_dir.joinpath("buildgraph.json")
-
-        script = config.buildgraph.script if config.buildgraph.script else ""
-
-        args: List[str] = [
-            f"--uproject={config.project.uproject_path}",
-            f"--script={script}",
-            f"--target={config.buildgraph.target}",
-            f"-Export={export_path}",
-            "uebp_UATMutexNoWait=1",
-        ]
-
-        if config.buildgraph.properties:
-            args += [f'-set:{k}="{v}"' if " " in str(v) else f"-set:{k}={v}" for k, v in config.buildgraph.properties.items()]
-
-        if (result := buildgraph.main(args)) != 0:
-            raise RuntimeError(f"Buildgraph export command failed with exit code {result}")
-
-        return export_path
-
-    def _get_jenkins_jobs(self, context: TemplateContext) -> str:
-        """Generate the Jenkins jobs for Unreal."""
-
-        export_path = self._generate_buildgraph_export_file(context)
-
-        class UnrealBuildgraphJsonOutput_Notify(BaseModel):
-            """Notification configuration for a node."""
-
-            default: str = Field(alias="Default")
-            submitters: str = Field(alias="Submitters")
-            warnings: bool = Field(alias="Warnings")
-
-            class Config:
-                populate_by_name = True
-
-        class UnrealBuildgraphJsonOutput_Node(BaseModel):
-            """Represents a build node within a group."""
-
-            name: str = Field(alias="Name")
-            depends_on: list[str] = Field(alias="DependsOn")
-            run_early: bool = Field(alias="RunEarly")
-            notify: UnrealBuildgraphJsonOutput_Notify = Field(alias="Notify")
-
-            @field_validator("depends_on", mode="before")
-            @classmethod
-            def split_depends_on(cls, v: str) -> list[str]:
-                """Convert semicolon-separated string to list."""
-                if isinstance(v, str):
-                    # Split by semicolon and filter out empty strings
-                    return [dep.strip() for dep in v.split(";") if dep.strip()]
-                return v
-
-            class Config:
-                populate_by_name = True
-
-        class UnrealBuildgraphJsonOutput_Group(BaseModel):
-            """Represents a build group containing nodes."""
-
-            name: str = Field(alias="Name")
-            agent_types: List[str] = Field(alias="Agent Types")
-            nodes: List[UnrealBuildgraphJsonOutput_Node] = Field(alias="Nodes")
-
-            class Config:
-                populate_by_name = True
-
-        class UnrealBuildgraphJsonOutput_BuildAgent(BaseModel):
-            """Represents a build agent with its associated groups."""
-
-            agent_type: str
-            groups: Dict[str, UnrealBuildgraphJsonOutput_Group]
-            parallel_groups: List[List[str]] = Field(default_factory=list, exclude=True)
-
-            class Config:
-                arbitrary_types_allowed = True
-
-            @model_validator(mode="after")
-            def create_parallel_groups(self) -> "UnrealBuildgraphJsonOutput_BuildAgent":
-                groups: dict[str, list[str]] = {group.name: [node.name for node in group.nodes] for group in self.groups.values()}
-                dependencies: dict[str, list[str]] = {}
-
-                for group_name, group in self.groups.items():
-                    for node in group.nodes:
-                        for dependency in node.depends_on:
-                            dependencies.setdefault(node.name, []).append(dependency)
-
-                self.parallel_groups = build_dependency_graph(groups, dependencies)
-
-                return self
-
-        class UnrealBuildgraphJsonOutput_BuildConfiguration(BaseModel):
-            """Root configuration for the build system."""
-
-            groups: List[UnrealBuildgraphJsonOutput_Group] = Field(alias="Groups")
-            badges: List[str] = Field(alias="Badges")
-            reports: List[str] = Field(alias="Reports")
-            build_agents: Dict[str, UnrealBuildgraphJsonOutput_BuildAgent] = Field(default_factory=dict, exclude=True)
-
-            class Config:
-                populate_by_name = True
-
-            @model_validator(mode="after")
-            def create_build_agents(self) -> "UnrealBuildgraphJsonOutput_BuildConfiguration":
-                """Create BuildAgent objects by grouping Groups by their agent types."""
-                agent_map: Dict[str, Dict[str, UnrealBuildgraphJsonOutput_Group]] = {}
-
-                for group in self.groups:
-                    for agent_type in group.agent_types:
-                        if agent_type not in agent_map:
-                            agent_map[agent_type] = {}
-                        agent_map[agent_type][group.name] = group
-
-                self.build_agents = {
-                    agent_type: UnrealBuildgraphJsonOutput_BuildAgent(agent_type=agent_type, groups=groups)
-                    for agent_type, groups in agent_map.items()
-                }
-
-                return self
-
-            @staticmethod
-            def create_from_path(path: Path) -> "UnrealBuildgraphJsonOutput_BuildConfiguration":
-                with open(path, encoding="utf-8") as f:
-                    json_str = f.read()
-                    return UnrealBuildgraphJsonOutput_BuildConfiguration.model_validate_json(json_str)
-
-        build_configuration = UnrealBuildgraphJsonOutput_BuildConfiguration.create_from_path(export_path)
-
-        TEMPLATE = """
-    def buildgraph_job_groups = [
-% for build_agent_platform,build_agent in ctx.build_agents.items():
-    % for group in build_agent.parallel_groups:
-        [
-        % for group_name in group:
-            [
-                "${group_name}": [
-                    tasks: [ ${", ".join(f'"{node.name}"' for node in build_agent.groups[group_name].nodes)} ],
-                    platform: "${build_agent_platform}"
-                ],
-            ],
-        % endfor
-        ],
-    % endfor
-% endfor
-    ]
-
-    buildgraph_job_groups.each { group ->
-        executeJobsInParallel(group)
-    }
-"""
-
-        jobs_template = Template(TEMPLATE)
-        return str(jobs_template.render(ctx=build_configuration))
+    def get_template_values(self, context: TemplateContext) -> Dict[str, Any]:
+        """Hand the BuildGraph plan to unreal.mako (None when parallel jobs are disabled)."""
+        config = cast(UnrealConfig, context.feature_config)
+        plan = plan_buildgraph(config.buildgraph, config.project.uproject_path, self._exporter) if config.buildgraph.use_parallel_jobs else None
+        return {"buildgraph_plan": plan}

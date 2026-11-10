@@ -63,6 +63,14 @@ class BaseFeature(ABC):
         except ValidationError as e:
             raise ValueError(f"Invalid config for feature '{self.feature_name}': {e}") from e
 
+    def get_template_values(self, context: TemplateContext) -> Dict[str, Any]:
+        """Extra named values made available to this feature's template, computed once before its blocks are rendered.
+
+        Override to hand derived data to the template instead of computing it inside the template.
+        Names must not collide with the TemplateContext fields (full_config, feature_config, global_values).
+        """
+        return {}
+
     def render_blocks(self, context: TemplateContext, template_lookup: TemplateLookup) -> GeneratedBlocks:
         """Render all template blocks for this feature."""
         try:
@@ -71,10 +79,11 @@ class BaseFeature(ABC):
             raise FileNotFoundError(f"Template not found for feature '{self.feature_name}': {self.template_path}") from exc
 
         blocks = GeneratedBlocks()
+        template_values = self.get_template_values(context)
 
         for block_type, block_value in blocks.blocks.items():
             try:
-                block = self.render_block(block_type, context, template)
+                block = self.render_block(block_type, context, template, template_values)
                 block_value.append(block)
             except AttributeError as e:
                 # If the exception message matches the condition below, it means that the block is not defined in template - that's OK
@@ -87,9 +96,9 @@ class BaseFeature(ABC):
 
         return blocks
 
-    def render_block(self, block_type: str, context: TemplateContext, template: Template) -> str:
+    def render_block(self, block_type: str, context: TemplateContext, template: Template, template_values: Dict[str, Any]) -> str:
         """Render a single block for this feature."""
-        rendered = template.get_def(block_type).render_unicode(**context.__dict__)
+        rendered = template.get_def(block_type).render_unicode(**context.__dict__, **template_values)
         if rendered.strip():
             cleaned = str(rendered.strip())  # re.sub(r'\n\s*\n', '\n', rendered.strip())
             if context.global_values.get("output_feature_sections", True):
